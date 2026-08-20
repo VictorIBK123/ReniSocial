@@ -13,52 +13,42 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Colors } from '../../constant';
 
 /* ==========================================================================
-   Design Tokens & Constants
+   Re-export Colors for backward compat
    ========================================================================== */
 
 export const colors = {
-  // Brand
-  brandPrimary: '#08299B',
-  brandDark: '#0D1B3E',
-  brandNavy: '#091E42',
-  
-  // Surfaces & Backgrounds
-  bgLight: '#F0F4FA',
-  bgCardSubtle: '#FAFBFD',
-  bgCardActive: '#FFFFFF',
-  bgDark: '#08299B',
-  
-  // Glass / Translucent
-  glassBg: 'rgba(255, 255, 255, 0.08)',
-  glassBgSubtle: 'rgba(255, 255, 255, 0.06)',
-  glassBorder: 'rgba(255, 255, 255, 0.15)',
-  glassBorderSubtle: 'rgba(255, 255, 255, 0.08)',
-  glassTagBg: 'rgba(255, 255, 255, 0.14)',
-  
-  // Text
-  textDark: '#091E42',
-  textLight: '#FFFFFF',
-  textMuted: '#64748B',
-  textMutedDark: 'rgba(255, 255, 255, 0.65)',
-  textMutedLight: 'rgba(255, 255, 255, 0.85)',
-  
-  // Borders
-  borderLight: '#E2E8F0',
-  borderSubtle: '#EEF2F6',
-  
-  // Status & Badges
-  success: '#16A34A',
-  successBg: '#DCFCE7',
-  danger: '#EF4444',
-  dangerBg: '#FEE2E2',
-  info: '#3B82F6',
-  infoBg: '#DBEAFE',
-  warning: '#F59E0B',
-  warningBg: '#FEF3C7',
-  purple: '#8B5CF6',
-  purpleBg: '#EDE9FE',
+  brandPrimary: Colors.brandPrimary,
+  brandDark: Colors.brandDark,
+  brandNavy: Colors.brandNavy,
+  bgLight: Colors.bgLight,
+  bgCardSubtle: Colors.bgCardSubtle,
+  bgCardActive: Colors.white,
+  bgDark: Colors.brandPrimary,
+  glassBg: Colors.glass08,
+  glassBgSubtle: Colors.glass06,
+  glassBorder: Colors.glass15,
+  glassBorderSubtle: Colors.glass08,
+  glassTagBg: Colors.glass14,
+  textDark: Colors.textDark,
+  textLight: Colors.white,
+  textMuted: Colors.textMuted,
+  textMutedDark: Colors.glass65,
+  textMutedLight: Colors.glass85,
+  borderLight: Colors.borderLight,
+  borderSubtle: Colors.borderSubtle,
+  success: Colors.success,
+  successBg: Colors.successBg,
+  danger: Colors.danger,
+  dangerBg: Colors.dangerBg,
+  info: Colors.info,
+  infoBg: Colors.infoBg,
+  warning: Colors.warning,
+  warningBg: Colors.warningBg,
+  purple: Colors.purple,
+  purpleBg: Colors.purpleBg,
 };
 
 /* ==========================================================================
@@ -140,7 +130,7 @@ const textColorMap: Record<TextColor, string> = {
   primary: colors.brandPrimary,
   dark: colors.textDark,
   light: colors.textLight,
-  white: '#FFFFFF',
+  white: Colors.white,
   muted: colors.textMuted,
   mutedDark: colors.textMutedDark,
   success: colors.success,
@@ -270,7 +260,7 @@ const viewVariantStyles = StyleSheet.create({
   default: {},
   screen: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     justifyContent: 'space-between',
   },
   screenDark: {
@@ -290,7 +280,7 @@ const viewVariantStyles = StyleSheet.create({
     width: '90%',
   },
   bottomCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     paddingHorizontal: 24,
@@ -379,10 +369,10 @@ const cardVariantStyles = StyleSheet.create({
     width: '100%',
   },
   solid: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 14,
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -402,14 +392,14 @@ const cardVariantStyles = StyleSheet.create({
     padding: 14,
   },
   post: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderRadius: 15,
     paddingVertical: 12,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -423,8 +413,8 @@ const cardVariantStyles = StyleSheet.create({
     marginBottom: 10,
   },
   interactiveActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: Colors.white,
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -483,7 +473,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const isPrimary = variant === 'primary' || variant === 'primaryNavy';
-  const defaultIconColor = iconColor || (isPrimary ? '#FFFFFF' : colors.brandPrimary);
+  const defaultIconColor = iconColor || (isPrimary ? Colors.white : Colors.brandPrimary);
   const defaultIconSize = iconSize || (size === 'sm' ? 14 : size === 'lg' ? 20 : 18);
 
   const renderIcon = () => {
@@ -517,7 +507,7 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={isPrimary ? '#FFFFFF' : colors.brandPrimary}
+          color={isPrimary ? Colors.white : Colors.brandPrimary}
         />
       ) : (
         <>
@@ -567,16 +557,16 @@ const buttonVariantStyles = StyleSheet.create({
   },
   primaryNavy: {
     backgroundColor: colors.brandDark,
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 3,
   },
   secondary: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: Colors.bgAccent,
     borderWidth: 1,
-    borderColor: '#E0E7FF',
+    borderColor: Colors.borderAccent,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -584,19 +574,19 @@ const buttonVariantStyles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   pill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    backgroundColor: Colors.glass14,
     borderRadius: 20,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
   outline: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderWidth: 1.5,
     borderColor: colors.brandPrimary,
     borderRadius: 18,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -631,10 +621,10 @@ const buttonTextStyles = StyleSheet.create({
     fontWeight: '700',
   },
   primary: {
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   primaryNavy: {
-    color: '#FFFFFF',
+    color: Colors.white,
   },
   secondary: {
     color: colors.brandPrimary,
@@ -644,7 +634,7 @@ const buttonTextStyles = StyleSheet.create({
     fontWeight: '600',
   },
   pill: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: Colors.glass90,
     fontSize: 11,
     fontWeight: '600',
   },
@@ -740,7 +730,7 @@ const badgeVariantStyles = StyleSheet.create({
     paddingVertical: 3,
   },
   subtle: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: Colors.bgAccent,
   },
 });
 
@@ -762,7 +752,7 @@ const badgeTextStyles = StyleSheet.create({
     color: colors.warning,
   },
   glass: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: Colors.glass90,
     fontWeight: '600',
   },
   subtle: {

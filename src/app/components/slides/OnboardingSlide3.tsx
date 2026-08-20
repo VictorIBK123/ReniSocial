@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '../../../constant';
 import Icon from '../IconResolver';
 import PaginationDots from '../PaginationDots';
 import { Button, Card, Text, View } from '../UI';
@@ -75,7 +76,7 @@ export default function OnboardingSlide3({
             </View>
             {selectedWorkspace === 'acme' && (
               <View style={styles.checkCircle}>
-                <Feather name="check" size={14} color="#FFFFFF" />
+                <Feather name="check" size={14} color={Colors.white} />
               </View>
             )}
           </Card>
@@ -115,7 +116,7 @@ export default function OnboardingSlide3({
             </View>
             {selectedWorkspace === 'vortex' && (
               <View style={styles.checkCircle}>
-                <Feather name="check" size={14} color="#FFFFFF" />
+                <Feather name="check" size={14} color={Colors.white} />
               </View>
             )}
           </Card>
@@ -147,7 +148,7 @@ export default function OnboardingSlide3({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08299B',
+    backgroundColor: Colors.brandPrimary,
     justifyContent: 'space-between',
   },
   topSection: {
@@ -178,11 +179,11 @@ const styles = StyleSheet.create({
   },
   workspaceWrapper: {
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: Colors.glass06,
     borderRadius: 22,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: Colors.glass12,
   },
   selectLabel: {
     fontSize: 10.5,
@@ -198,10 +199,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   activeAvatarBox: {
-    backgroundColor: '#08299B',
+    backgroundColor: Colors.brandPrimary,
   },
   inactiveAvatarBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: Colors.glass15,
   },
   avatarText: {
     fontSize: 16,
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#08299B',
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   skipButtonText: {
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: Colors.glass85,
     fontSize: 14,
     fontWeight: '600',
   },

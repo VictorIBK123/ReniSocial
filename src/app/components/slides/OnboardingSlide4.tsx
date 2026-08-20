@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '../../../constant';
 import Icon from '../IconResolver';
 import PaginationDots from '../PaginationDots';
 import { Button, Text, View } from '../UI';
@@ -96,7 +97,7 @@ export default function OnboardingSlide4({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     justifyContent: 'space-between',
   },
   logoRow: {
@@ -139,10 +140,10 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#08299B',
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#08299B',
+    shadowColor: Colors.brandPrimary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -152,10 +153,10 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#091E42',
+    backgroundColor: Colors.brandNavy,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#091E42',
+    shadowColor: Colors.brandNavy,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -171,19 +172,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   approveButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderWidth: 1.5,
-    borderColor: '#08299B',
+    borderColor: Colors.brandPrimary,
     borderRadius: 18,
     height: 40,
     width: 140,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   approveButtonText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#08299B',
+    color: Colors.brandPrimary,
     letterSpacing: 0.6,
   },
   bottomSection: {
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   skipButtonText: {
-    color: '#475569',
+    color: Colors.textMutedDarker,
     fontSize: 14,
     fontWeight: '600',
   },

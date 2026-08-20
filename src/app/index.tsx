@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { View, StyleSheet, Alert, Platform } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { StatusBar } from 'expo-status-bar';
+import { Colors } from '../constant';
 import OnboardingSlide1 from './components/slides/OnboardingSlide1';
 import OnboardingSlide2 from './components/slides/OnboardingSlide2';
 import OnboardingSlide3 from './components/slides/OnboardingSlide3';
@@ -102,7 +103,7 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08299B',
+    backgroundColor: Colors.brandPrimary,
   },
   pagerView: {
     flex: 1,

@@ -2,8 +2,10 @@ import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '../../../constant';
+import Icon from '../IconResolver';
 import PaginationDots from '../PaginationDots';
-import ReniSocialLogo, { PaperPlaneIcon } from '../ReniSocialLogo';
+import { PaperPlaneIcon } from '../ReniSocialLogo';
 import { Button, Text, View } from '../UI';
 
 interface OnboardingSlide5Props {
@@ -21,27 +23,32 @@ export default function OnboardingSlide5({
 
   return (
     <View variant="screenDark" style={[styles.container, { paddingTop: Math.max(insets.top + 16, 40) }]}>
-      {/* Top Header Section */}
-      <View variant="topSection" style={styles.topSection}>
-        <ReniSocialLogo variant="dark" size="medium" />
-        <Text variant="heading" color="light" style={styles.heading}>
-          Ready to take control of your{'\n'}social presence?
-        </Text>
-      </View>
 
-      {/* Visual Orbit Illustration */}
+      {/* Visual Content — centered as one group */}
       <View variant="preview" style={styles.previewContainer}>
+        <View variant="topSection" style={styles.topSection}>
+          <View variant="row" style={styles.logoRow}>
+            <Icon name="logoLight" size={40} />
+            <Text variant="heading" color="light" style={styles.brandTitle}>
+              ReniSocial
+            </Text>
+          </View>
+          <Text variant="heading" color="light" style={styles.heading}>
+            Ready to take control of your{'\n'}social presence?
+          </Text>
+        </View>
+
         <View style={styles.orbitStage}>
           {/* Outer Ring */}
           <View style={styles.outerRing}>
             {/* Top-Right: Video/Camera Badge */}
             <View style={styles.videoBadge}>
-              <Feather name="video" size={16} color="#FFFFFF" />
+              <Feather name="video" size={16} color={Colors.white} />
             </View>
 
             {/* Bottom-Right: LinkedIn Badge */}
             <View style={styles.linkedInBadge}>
-              <FontAwesome5 name="linkedin-in" size={15} color="#FFFFFF" />
+              <FontAwesome5 name="linkedin-in" size={15} color={Colors.white} />
             </View>
           </View>
 
@@ -49,13 +56,13 @@ export default function OnboardingSlide5({
           <View style={styles.innerRing}>
             {/* Top-Left: Instagram Badge */}
             <View style={styles.instagramBadge}>
-              <Feather name="instagram" size={15} color="#FFFFFF" />
+              <Feather name="instagram" size={15} color={Colors.white} />
             </View>
           </View>
 
           {/* Center ReniSocial Logo Badge */}
           <View style={styles.centerBadge}>
-            <PaperPlaneIcon size={34} color="#08299B" />
+            <PaperPlaneIcon size={34} color={Colors.brandPrimary} />
           </View>
         </View>
       </View>
@@ -98,13 +105,21 @@ export default function OnboardingSlide5({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08299B',
+    backgroundColor: Colors.brandPrimary,
     justifyContent: 'space-between',
   },
   topSection: {
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: 8,
+  },
+  logoRow: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  brandTitle: {
+    fontSize: 26,
+    fontWeight: '800',
   },
   heading: {
     fontSize: 22,
@@ -132,7 +147,7 @@ const styles = StyleSheet.create({
     height: 226,
     borderRadius: 113,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: Colors.glass12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -142,7 +157,7 @@ const styles = StyleSheet.create({
     height: 154,
     borderRadius: 77,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
+    borderColor: Colors.glass18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -150,10 +165,10 @@ const styles = StyleSheet.create({
     width: 78,
     height: 78,
     borderRadius: 39,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
@@ -167,10 +182,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#E1306C',
+    backgroundColor: Colors.instagram,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#E1306C',
+    shadowColor: Colors.instagram,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
@@ -183,10 +198,10 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#8B5CF6',
+    backgroundColor: Colors.purple,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#8B5CF6',
+    shadowColor: Colors.purple,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
@@ -199,10 +214,10 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#0A66C2',
+    backgroundColor: Colors.linkedin,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0A66C2',
+    shadowColor: Colors.linkedin,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,

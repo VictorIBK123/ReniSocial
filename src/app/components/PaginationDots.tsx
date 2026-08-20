@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Colors } from '../../constant';
 
 interface PaginationDotsProps {
   total?: number;
@@ -15,8 +16,8 @@ export default function PaginationDots({
   onDotPress,
 }: PaginationDotsProps) {
   const isDark = theme === 'dark';
-  const activeColor = isDark ? '#FFFFFF' : '#08299B';
-  const inactiveColor = isDark ? 'rgba(255, 255, 255, 0.35)' : '#D1D5DB';
+  const activeColor = isDark ? Colors.white : Colors.brandPrimary;
+  const inactiveColor = isDark ? Colors.glass35 : Colors.dotInactive;
 
   return (
     <View style={styles.container}>

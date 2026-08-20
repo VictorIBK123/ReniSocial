@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '../../../constant';
 import { Icon } from '../IconResolver';
 import PaginationDots from '../PaginationDots';
 import { Badge, Button, Card, Text, View } from '../UI';
@@ -43,7 +44,7 @@ export default function OnboardingSlide1({
           {/* Post Item 1: Instagram (Active / Ready) */}
           <Card variant="post" style={styles.activePostCard}>
             <View style={styles.postIconContainer}>
-              <Icon name="instagram" size={15} color="#08299B" />
+              <Icon name="instagram" size={15} color={Colors.brandPrimary} />
             </View>
             <View style={styles.postDetails}>
               <Text variant="bodyBold" color="dark" style={styles.activePostTitle}>
@@ -59,7 +60,7 @@ export default function OnboardingSlide1({
           {/* Post Item 2: Twitter Thread (Draft) */}
           <View style={styles.draftPostCard}>
             <View style={styles.draftIconContainer}>
-              <Icon name="twitter" size={14} color="#ffffff" />
+              <Icon name="twitter" size={14} color={Colors.white} />
             </View>
             <View style={styles.postDetails}>
               <Text variant="bodyBold" color="light" style={styles.draftPostTitle}>
@@ -111,7 +112,7 @@ export default function OnboardingSlide1({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08299B',
+    backgroundColor: Colors.brandPrimary,
     justifyContent: 'space-between',
   },
   topSection: {
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: Colors.glass40,
   },
   activePostCard: {
     marginBottom: 10,
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: Colors.bgAccent,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -170,20 +171,20 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   draftPostCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.09)',
+    backgroundColor: Colors.glass09,
     borderRadius: 15,
     paddingVertical: 12,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: Colors.glass08,
   },
   draftIconContainer: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: Colors.glass12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,

@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '../../../constant';
 import Icon from '../IconResolver';
 import PaginationDots from '../PaginationDots';
 import { Button, Card, Text, View } from '../UI';
@@ -45,10 +46,10 @@ export default function OnboardingSlide2({
             </Text>
             <View variant="row" style={styles.calendarNavButtons}>
               <TouchableOpacity style={styles.navButton} activeOpacity={0.7}>
-                <Feather name="chevron-left" size={14} color="#091E42" />
+                <Feather name="chevron-left" size={14} color={Colors.brandNavy} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.navButton} activeOpacity={0.7}>
-                <Feather name="chevron-right" size={14} color="#091E42" />
+                <Feather name="chevron-right" size={14} color={Colors.brandNavy} />
               </TouchableOpacity>
             </View>
           </View>
@@ -70,7 +71,7 @@ export default function OnboardingSlide2({
               </Text>
             </View>
             <View variant="row" style={styles.eventContent}>
-              <View style={[styles.statusDot, { backgroundColor: '#10B981' }]} />
+              <View style={[styles.statusDot, { backgroundColor: Colors.successAlt }]} />
               <Text variant="body" color="dark" style={styles.eventTitle} numberOfLines={1}>
                 Product Demo Video
               </Text>
@@ -88,7 +89,7 @@ export default function OnboardingSlide2({
               </Text>
             </View>
             <View variant="row" style={styles.eventContent}>
-              <View style={[styles.statusDot, { backgroundColor: '#F59E0B' }]} />
+              <View style={[styles.statusDot, { backgroundColor: Colors.warning }]} />
               <Text variant="body" color="dark" style={styles.eventTitle} numberOfLines={1}>
                 LinkedIn Strategy Post
               </Text>
@@ -125,7 +126,7 @@ export default function OnboardingSlide2({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     justifyContent: 'space-between',
   },
   topSection: {
@@ -179,10 +180,10 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
@@ -192,7 +193,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
     paddingVertical: 10,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: Colors.borderLight,
     marginBottom: 12,
   },
   weekdayText: {
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 9,
-    backgroundColor: '#08299B',
+    backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -221,20 +222,20 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 9,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Colors.bgInactive,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   inactiveDateBadgeText: {
-    color: '#475569',
+    color: Colors.textMutedDarker,
     fontSize: 13,
     fontWeight: '700',
   },
   eventContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.white,
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderRadius: 8,
@@ -267,7 +268,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   skipButtonText: {
-    color: '#475569',
+    color: Colors.textMutedDarker,
     fontSize: 14,
     fontWeight: '600',
   },
