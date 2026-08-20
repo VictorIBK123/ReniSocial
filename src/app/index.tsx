@@ -1,98 +1,113 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useRef, useState } from 'react';
+import { View, StyleSheet, Alert, Platform } from 'react-native';
+import PagerView from 'react-native-pager-view';
+import { StatusBar } from 'expo-status-bar';
+import OnboardingSlide1 from './components/slides/OnboardingSlide1';
+import OnboardingSlide2 from './components/slides/OnboardingSlide2';
+import OnboardingSlide3 from './components/slides/OnboardingSlide3';
+import OnboardingSlide4 from './components/slides/OnboardingSlide4';
+import OnboardingSlide5 from './components/slides/OnboardingSlide5';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+export default function Index() {
+  const pagerRef = useRef<PagerView>(null);
+  const [currentPage, setCurrentPage] = useState<number>(0);
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+  const isDarkSlide = currentPage === 0 || currentPage === 2 || currentPage === 4;
+
+  const goToPage = (pageIndex: number) => {
+    pagerRef.current?.setPage(pageIndex);
+    setCurrentPage(pageIndex);
+  };
+
+  const handleNext = () => {
+    if (currentPage < 4) {
+      goToPage(currentPage + 1);
+    }
+  };
+
+  const handleSkip = () => {
+    goToPage(4);
+  };
+
+  const handleSignIn = () => {
+    if (Platform.OS === 'web') {
+      window.alert('Sign In pressed');
+    } else {
+      Alert.alert('Sign In', 'Navigate to sign in screen');
+    }
+  };
+
+  const handleComplete = () => {
+    if (Platform.OS === 'web') {
+      window.alert('Create Free Workspace pressed');
+    } else {
+      Alert.alert('Welcome!', 'Workspace setup flow initiated.');
+    }
+  };
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <View style={styles.container}>
+      <StatusBar style={isDarkSlide ? 'light' : 'dark'} />
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+      <PagerView
+        ref={pagerRef}
+        style={styles.pagerView}
+        initialPage={0}
+        onPageSelected={(e) => setCurrentPage(e.nativeEvent.position)}
+      >
+        <View key="1" style={styles.slideContainer}>
+          <OnboardingSlide1
+            onNext={handleNext}
+            onSignIn={handleSignIn}
+            onDotPress={goToPage}
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        <View key="2" style={styles.slideContainer}>
+          <OnboardingSlide2
+            onNext={handleNext}
+            onSkip={handleSkip}
+            onDotPress={goToPage}
+          />
+        </View>
+
+        <View key="3" style={styles.slideContainer}>
+          <OnboardingSlide3
+            onNext={handleNext}
+            onSkip={handleSkip}
+            onDotPress={goToPage}
+          />
+        </View>
+
+        <View key="4" style={styles.slideContainer}>
+          <OnboardingSlide4
+            onNext={handleNext}
+            onSkip={handleSkip}
+            onDotPress={goToPage}
+          />
+        </View>
+
+        <View key="5" style={styles.slideContainer}>
+          <OnboardingSlide5
+            onComplete={handleComplete}
+            onSignIn={handleSignIn}
+            onDotPress={goToPage}
+          />
+        </View>
+      </PagerView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    backgroundColor: '#08299B',
   },
-  safeArea: {
+  pagerView: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  slideContainer: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
   },
 });
