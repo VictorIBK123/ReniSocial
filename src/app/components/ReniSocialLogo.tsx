@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { Colors } from '../../constant';
+import { Colors, Fonts } from '../../constant';
 
 interface ReniSocialLogoProps {
   variant?: 'light' | 'dark' | 'badge';
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   brandText: {
-    fontWeight: '800',
+    fontFamily: Fonts.heading.extraBold,
     letterSpacing: -0.5,
   },
   badgeContainer: {

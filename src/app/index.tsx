@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { View, StyleSheet, Alert, Platform } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
 import { Colors } from '../constant';
 import OnboardingSlide1 from './components/slides/OnboardingSlide1';
 import OnboardingSlide2 from './components/slides/OnboardingSlide2';
@@ -10,6 +11,7 @@ import OnboardingSlide4 from './components/slides/OnboardingSlide4';
 import OnboardingSlide5 from './components/slides/OnboardingSlide5';
 
 export default function Index() {
+  const router = useRouter();
   const pagerRef = useRef<PagerView>(null);
   const [currentPage, setCurrentPage] = useState<number>(0);
 
@@ -31,19 +33,11 @@ export default function Index() {
   };
 
   const handleSignIn = () => {
-    if (Platform.OS === 'web') {
-      window.alert('Sign In pressed');
-    } else {
-      Alert.alert('Sign In', 'Navigate to sign in screen');
-    }
+    router.push('/sign-in' as any);
   };
 
   const handleComplete = () => {
-    if (Platform.OS === 'web') {
-      window.alert('Create Free Workspace pressed');
-    } else {
-      Alert.alert('Welcome!', 'Workspace setup flow initiated.');
-    }
+    router.push('/sign-up' as any);
   };
 
   return (

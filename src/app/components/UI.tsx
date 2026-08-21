@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import {
   ActivityIndicator,
+  NativeSyntheticEvent,
+  Pressable,
   StyleProp,
   StyleSheet,
   Text as RNText,
   TextProps as RNTextProps,
+  TextInput,
+  TextInputKeyPressEventData,
+  TextInputProps,
   TextStyle,
   TouchableOpacity,
   TouchableOpacityProps,
@@ -12,8 +17,8 @@ import {
   ViewProps as RNViewProps,
   ViewStyle,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constant';
+import { Feather, FontAwesome5, AntDesign } from '@expo/vector-icons';
+import { Colors, Fonts } from '../../constant';
 
 /* ==========================================================================
    Re-export Colors for backward compat
@@ -105,8 +110,8 @@ export const Text: React.FC<TextProps> = ({
     resolvedColor = textColorMap[color as TextColor];
   }
 
-  // Resolve font weight
-  const resolvedWeight = weight ? fontWeightMap[weight] : undefined;
+  // Resolve font weight → fontFamily
+  const resolvedFontFamily = weight ? fontFamilyMap[weight] : undefined;
 
   return (
     <RNText
@@ -114,7 +119,7 @@ export const Text: React.FC<TextProps> = ({
         variantStyle,
         resolvedColor ? { color: resolvedColor } : undefined,
         align ? { textAlign: align } : undefined,
-        resolvedWeight ? { fontWeight: resolvedWeight } : undefined,
+        resolvedFontFamily ? { fontFamily: resolvedFontFamily } : undefined,
         size !== undefined ? { fontSize: size } : undefined,
         lineHeight !== undefined ? { lineHeight } : undefined,
         style,
@@ -137,66 +142,67 @@ const textColorMap: Record<TextColor, string> = {
   danger: colors.danger,
 };
 
-const fontWeightMap: Record<
+/** Maps the `weight` prop to a specific fontFamily (body family by default) */
+const fontFamilyMap: Record<
   'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold',
-  TextStyle['fontWeight']
+  string
 > = {
-  normal: '400',
-  medium: '500',
-  semibold: '600',
-  bold: '700',
-  extrabold: '800',
+  normal: Fonts.body.regular,
+  medium: Fonts.body.medium,
+  semibold: Fonts.body.semiBold,
+  bold: Fonts.body.bold,
+  extrabold: Fonts.heading.extraBold,
 };
 
 const textVariantStyles = StyleSheet.create({
   heading: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: Fonts.heading.extraBold,
     color: colors.textDark,
     lineHeight: 30,
     letterSpacing: -0.3,
   },
   subheading: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: Fonts.body.medium,
     color: colors.textMuted,
     lineHeight: 22,
   },
   eyebrow: {
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: Fonts.alt.bold,
     color: colors.textMuted,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   body: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: Fonts.body.medium,
     color: colors.textDark,
     lineHeight: 20,
   },
   bodyBold: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.body.bold,
     color: colors.textDark,
     lineHeight: 20,
   },
   caption: {
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: Fonts.body.medium,
     color: colors.textMuted,
     lineHeight: 16,
   },
   label: {
     fontSize: 10.5,
-    fontWeight: '700',
+    fontFamily: Fonts.alt.bold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     color: colors.textMuted,
   },
   link: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.body.bold,
     color: colors.brandPrimary,
   },
 });
@@ -618,7 +624,7 @@ const buttonSizeStyles = StyleSheet.create({
 
 const buttonTextStyles = StyleSheet.create({
   base: {
-    fontWeight: '700',
+    fontFamily: Fonts.heading.bold,
   },
   primary: {
     color: Colors.white,
@@ -631,22 +637,22 @@ const buttonTextStyles = StyleSheet.create({
   },
   ghost: {
     color: colors.textMutedLight,
-    fontWeight: '600',
+    fontFamily: Fonts.body.semiBold,
   },
   pill: {
     color: Colors.glass90,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: Fonts.body.semiBold,
   },
   outline: {
     color: colors.brandPrimary,
     fontSize: 9.5,
-    fontWeight: '800',
+    fontFamily: Fonts.alt.bold,
     letterSpacing: 0.6,
   },
   link: {
     color: colors.brandPrimary,
-    fontWeight: '700',
+    fontFamily: Fonts.body.bold,
   },
 });
 
@@ -737,7 +743,7 @@ const badgeVariantStyles = StyleSheet.create({
 const badgeTextStyles = StyleSheet.create({
   base: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.body.bold,
   },
   success: {
     color: colors.success,
@@ -753,7 +759,7 @@ const badgeTextStyles = StyleSheet.create({
   },
   glass: {
     color: Colors.glass90,
-    fontWeight: '600',
+    fontFamily: Fonts.body.semiBold,
   },
   subtle: {
     color: colors.brandPrimary,
@@ -761,7 +767,519 @@ const badgeTextStyles = StyleSheet.create({
 });
 
 /* ==========================================================================
-   6. Default Export
+   6. Input / TextField Component
+   ========================================================================== */
+
+export interface InputProps extends Omit<TextInputProps, 'style'> {
+  label?: string;
+  error?: string;
+  leftIcon?: React.ComponentProps<typeof Feather>['name'];
+  rightIcon?: React.ComponentProps<typeof Feather>['name'];
+  onRightIconPress?: () => void;
+  isPassword?: boolean;
+  containerStyle?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>;
+  style?: StyleProp<ViewStyle>;
+}
+
+export const Input: React.FC<InputProps> = ({
+  label,
+  error,
+  leftIcon,
+  rightIcon,
+  onRightIconPress,
+  isPassword,
+  containerStyle,
+  inputStyle,
+  style,
+  onFocus,
+  onBlur,
+  ...props
+}) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const resolvedLeftIcon = isPassword && !leftIcon ? 'lock' : leftIcon;
+  const resolvedRightIcon = isPassword ? (showPassword ? 'eye-off' : 'eye') : rightIcon;
+  const handleRightPress = isPassword ? () => setShowPassword(!showPassword) : onRightIconPress;
+
+  return (
+    <RNView style={[inputStyles.wrapper, containerStyle, style]}>
+      {label ? (
+        <RNText style={[inputStyles.label, !!error && inputStyles.labelError]}>
+          {label}
+        </RNText>
+      ) : null}
+
+      <RNView
+        style={[
+          inputStyles.inputBox,
+          isFocused && inputStyles.inputBoxFocused,
+          !!error && inputStyles.inputBoxError,
+        ]}
+      >
+        {resolvedLeftIcon ? (
+          <RNView style={inputStyles.iconLeft}>
+            <Feather
+              name={resolvedLeftIcon}
+              size={18}
+              color={error ? Colors.danger : isFocused ? Colors.brandPrimary : Colors.textMuted}
+            />
+          </RNView>
+        ) : null}
+
+        <TextInput
+          placeholderTextColor="#94A3B8"
+          secureTextEntry={isPassword && !showPassword}
+          onFocus={(e) => {
+            setIsFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            onBlur?.(e);
+          }}
+          style={[
+            inputStyles.textInput,
+            resolvedLeftIcon ? { paddingLeft: 6 } : undefined,
+            resolvedRightIcon ? { paddingRight: 6 } : undefined,
+            inputStyle,
+          ]}
+          {...props}
+        />
+
+        {resolvedRightIcon ? (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            disabled={!handleRightPress}
+            onPress={handleRightPress}
+            style={inputStyles.iconRight}
+          >
+            <Feather
+              name={resolvedRightIcon}
+              size={18}
+              color={Colors.textMuted}
+            />
+          </TouchableOpacity>
+        ) : null}
+      </RNView>
+
+      {error ? <RNText style={inputStyles.errorText}>{error}</RNText> : null}
+    </RNView>
+  );
+};
+
+const inputStyles = StyleSheet.create({
+  wrapper: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 13,
+    fontFamily: Fonts.body.bold,
+    color: Colors.textDark,
+    marginBottom: 6,
+  },
+  labelError: {
+    color: Colors.danger,
+  },
+  inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1.5,
+    borderColor: Colors.borderLight,
+    borderRadius: 14,
+    minHeight: 50,
+    paddingHorizontal: 14,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  inputBoxFocused: {
+    borderColor: Colors.brandPrimary,
+    backgroundColor: Colors.white,
+  },
+  inputBoxError: {
+    borderColor: Colors.danger,
+    backgroundColor: '#FFF8F8',
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14.5,
+    fontFamily: Fonts.body.medium,
+    color: Colors.textDark,
+    paddingVertical: 10,
+  },
+  iconLeft: {
+    marginRight: 6,
+  },
+  iconRight: {
+    marginLeft: 6,
+    padding: 4,
+  },
+  errorText: {
+    fontSize: 11.5,
+    fontFamily: Fonts.body.medium,
+    color: Colors.danger,
+    marginTop: 5,
+    marginLeft: 2,
+  },
+});
+
+/* ==========================================================================
+   7. Checkbox Component
+   ========================================================================== */
+
+export interface CheckboxProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  children?: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}
+
+export const Checkbox: React.FC<CheckboxProps> = ({
+  checked,
+  onChange,
+  label,
+  children,
+  style,
+}) => {
+  return (
+    <Pressable
+      onPress={() => onChange(!checked)}
+      style={[checkboxStyles.container, style]}
+    >
+      <RNView style={[checkboxStyles.box, checked && checkboxStyles.boxChecked]}>
+        {checked && <Feather name="check" size={13} color={Colors.white} />}
+      </RNView>
+      {label ? (
+        <RNText style={checkboxStyles.label}>{label}</RNText>
+      ) : (
+        <RNView style={checkboxStyles.childrenContainer}>{children}</RNView>
+      )}
+    </Pressable>
+  );
+};
+
+const checkboxStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  box: {
+    width: 19,
+    height: 19,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 9,
+  },
+  boxChecked: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+  },
+  label: {
+    fontSize: 12.5,
+    fontFamily: Fonts.body.medium,
+    color: Colors.textMutedDarker,
+  },
+  childrenContainer: {
+    flex: 1,
+  },
+});
+
+/* ==========================================================================
+   8. Divider Component
+   ========================================================================== */
+
+export interface DividerProps {
+  text?: string;
+  style?: StyleProp<ViewStyle>;
+}
+
+export const Divider: React.FC<DividerProps> = ({ text, style }) => {
+  return (
+    <RNView style={[dividerStyles.container, style]}>
+      <RNView style={dividerStyles.line} />
+      {text ? <RNText style={dividerStyles.text}>{text}</RNText> : null}
+      <RNView style={dividerStyles.line} />
+    </RNView>
+  );
+};
+
+const dividerStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 18,
+    width: '100%',
+  },
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.borderLight,
+  },
+  text: {
+    marginHorizontal: 12,
+    fontSize: 11,
+    fontFamily: Fonts.body.bold,
+    color: Colors.textMuted,
+    letterSpacing: 0.8,
+  },
+});
+
+/* ==========================================================================
+   9. OTP Input Component (5 Digits)
+   ========================================================================== */
+
+export interface OtpInputProps {
+  length?: number;
+  value: string;
+  onChange: (value: string) => void;
+  style?: StyleProp<ViewStyle>;
+}
+
+export const OtpInput: React.FC<OtpInputProps> = ({
+  length = 5,
+  value,
+  onChange,
+  style,
+}) => {
+  const inputRefs = useRef<Array<TextInput | null>>([]);
+
+  const handleChange = (text: string, index: number) => {
+    const cleanText = text.replace(/[^0-9]/g, '');
+    const chars = value.split('');
+
+    if (cleanText.length > 1) {
+      // Handle paste
+      const pasted = cleanText.slice(0, length);
+      onChange(pasted);
+      const nextIndex = Math.min(pasted.length, length - 1);
+      inputRefs.current[nextIndex]?.focus();
+      return;
+    }
+
+    chars[index] = cleanText;
+    const newValue = chars.join('').slice(0, length);
+    onChange(newValue);
+
+    if (cleanText && index < length - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyPress = (
+    e: NativeSyntheticEvent<TextInputKeyPressEventData>,
+    index: number
+  ) => {
+    if (e.nativeEvent.key === 'Backspace' && !value[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  return (
+    <RNView style={[otpStyles.container, style]}>
+      {Array.from({ length }).map((_, i) => {
+        const char = value[i] || '';
+        const isFilled = !!char;
+        const isCurrent = i === Math.min(value.length, length - 1);
+
+        return (
+          <TextInput
+            key={i}
+            ref={(ref) => {
+              inputRefs.current[i] = ref;
+            }}
+            keyboardType="number-pad"
+            maxLength={1}
+            value={char}
+            onChangeText={(text) => handleChange(text, i)}
+            onKeyPress={(e) => handleKeyPress(e, i)}
+            style={[
+              otpStyles.box,
+              isFilled && otpStyles.boxFilled,
+              isCurrent && otpStyles.boxCurrent,
+            ]}
+          />
+        );
+      })}
+    </RNView>
+  );
+};
+
+const otpStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginVertical: 18,
+  },
+  box: {
+    width: 52,
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.borderLight,
+    backgroundColor: Colors.white,
+    textAlign: 'center',
+    fontSize: 22,
+    fontFamily: Fonts.heading.bold,
+    color: Colors.textDark,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  boxFilled: {
+    borderColor: Colors.borderAccent,
+    backgroundColor: Colors.bgAccent,
+  },
+  boxCurrent: {
+    borderColor: Colors.brandPrimary,
+  },
+});
+
+/* ==========================================================================
+   10. Step Indicator Component
+   ========================================================================== */
+
+export interface StepIndicatorProps {
+  totalSteps?: number;
+  currentStep: number;
+  style?: StyleProp<ViewStyle>;
+}
+
+export const StepIndicator: React.FC<StepIndicatorProps> = ({
+  totalSteps = 2,
+  currentStep = 1,
+  style,
+}) => {
+  return (
+    <RNView style={[stepStyles.container, style]}>
+      {Array.from({ length: totalSteps }).map((_, idx) => {
+        const isActive = idx + 1 === currentStep;
+        return (
+          <RNView
+            key={idx}
+            style={[stepStyles.pill, isActive ? stepStyles.pillActive : stepStyles.pillInactive]}
+          />
+        );
+      })}
+    </RNView>
+  );
+};
+
+const stepStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 16,
+  },
+  pill: {
+    height: 5,
+    borderRadius: 3,
+  },
+  pillActive: {
+    width: 26,
+    backgroundColor: Colors.brandNavy,
+  },
+  pillInactive: {
+    width: 7,
+    backgroundColor: '#CBD5E1',
+  },
+});
+
+/* ==========================================================================
+   11. Social Auth Button Component
+   ========================================================================== */
+
+export interface SocialButtonProps extends TouchableOpacityProps {
+  provider: 'google' | 'linkedin';
+  title?: string;
+  compact?: boolean;
+  style?: StyleProp<ViewStyle>;
+}
+
+export const SocialButton: React.FC<SocialButtonProps> = ({
+  provider,
+  title,
+  compact = false,
+  style,
+  ...props
+}) => {
+  const isGoogle = provider === 'google';
+
+  const defaultTitle = isGoogle
+    ? compact
+      ? 'Google'
+      : 'Continue with Google'
+    : compact
+    ? 'LinkedIn'
+    : 'Continue with LinkedIn';
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.75}
+      style={[
+        socialBtnStyles.button,
+        compact && socialBtnStyles.buttonCompact,
+        style,
+      ]}
+      {...props}
+    >
+      {isGoogle ? (
+        <AntDesign name="google" size={18} color="#EA4335" style={socialBtnStyles.icon} />
+      ) : (
+        <FontAwesome5 name="linkedin" size={18} color="#0A66C2" style={socialBtnStyles.icon} />
+      )}
+      <RNText style={socialBtnStyles.title}>{title || defaultTitle}</RNText>
+    </TouchableOpacity>
+  );
+};
+
+const socialBtnStyles = StyleSheet.create({
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1.2,
+    borderColor: Colors.borderLight,
+    borderRadius: 14,
+    height: 50,
+    paddingHorizontal: 16,
+    width: '100%',
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  buttonCompact: {
+    flex: 1,
+  },
+  icon: {
+    marginRight: 8,
+  },
+  title: {
+    fontSize: 13.5,
+    fontFamily: Fonts.body.bold,
+    color: Colors.textDark,
+  },
+});
+
+/* ==========================================================================
+   12. Default Export
    ========================================================================== */
 
 export default {
@@ -770,5 +1288,11 @@ export default {
   Card,
   Button,
   Badge,
+  Input,
+  Checkbox,
+  Divider,
+  OtpInput,
+  StepIndicator,
+  SocialButton,
   colors,
 };

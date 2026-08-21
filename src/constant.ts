@@ -68,3 +68,35 @@ export const Colors = {
 } as const;
 
 export type ColorKey = keyof typeof Colors;
+
+/* ==========================================================================
+   Typography — Font Families
+   ========================================================================== */
+
+export const Fonts = {
+  // ── Title / Bold Texts ─────────────────────────────────────────────────
+  heading: {
+    regular: 'Outfit_400Regular',
+    medium: 'Outfit_500Medium',
+    semiBold: 'Outfit_600SemiBold',
+    bold: 'Outfit_700Bold',
+    extraBold: 'Outfit_800ExtraBold',
+  },
+
+  // ── Body Text ──────────────────────────────────────────────────────────
+  body: {
+    regular: 'PlusJakartaSans_400Regular',
+    medium: 'PlusJakartaSans_500Medium',
+    semiBold: 'PlusJakartaSans_600SemiBold',
+    bold: 'PlusJakartaSans_700Bold',
+    extraBold: 'PlusJakartaSans_800ExtraBold',
+  },
+
+  // ── Alt / Stylish Texts ────────────────────────────────────────────────
+  alt: {
+    regular: 'SpaceGrotesk_400Regular',
+    medium: 'SpaceGrotesk_500Medium',
+    semiBold: 'SpaceGrotesk_600SemiBold',
+    bold: 'SpaceGrotesk_700Bold',
+  },
+} as const;
