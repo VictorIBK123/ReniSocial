@@ -62,9 +62,6 @@ export const Colors = {
   purple: '#8B5CF6',
   purpleBg: '#EDE9FE',
   linkedin: '#0A66C2',
-
-  // ── Shadow ─────────────────────────────────────────────────────────────
-  shadow: '#000000',
 } as const;
 
 export type ColorKey = keyof typeof Colors;

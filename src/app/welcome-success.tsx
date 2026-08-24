@@ -1,20 +1,17 @@
-import React from 'react';
+import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import CalendarDashboard from '../../assets/svgs/calendar-dashboard.svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constant';
 import Icon from './components/IconResolver';
 import {
-  Badge,
-  Button,
-  Card,
   Text,
-  View,
+  View
 } from './components/UI';
 
 export default function WelcomeSuccessScreen() {
@@ -37,90 +34,30 @@ export default function WelcomeSuccessScreen() {
         {/* Header Bar */}
         <View variant="row" style={styles.brandHeader}>
           <Icon name="logoLight" size={32} />
-          <Text variant="heading" color="light" style={styles.brandTitle}>
+          <Text align="center" variant="heading" color="light" style={styles.brandTitle}>
             ReniSocial
           </Text>
         </View>
 
         {/* Center Illustration Stage */}
         <View style={styles.centerStage}>
-          {/* Glowing Avatar Ring */}
-          <View style={styles.avatarOuterRing}>
-            <View style={styles.avatarInnerCircle}>
-              <Feather name="check" size={36} color={Colors.white} />
-            </View>
-          </View>
+          {/* Empty Ring */}
+          <View style={styles.avatarOuterRing} />
 
           {/* Heading & Subheading */}
           <Text variant="heading" color="light" style={styles.heading}>
             You're all set!
           </Text>
-          <Text variant="body" color="mutedLight" style={styles.subheading}>
+          <Text variant="body" color="mutedDark" style={styles.subheading}>
             Your Renisocial account is ready. Let's set up your first workspace.
           </Text>
 
           {/* Dashboard Preview Card */}
-          <Card variant="solid" style={styles.dashboardCard}>
-            <View variant="row" style={styles.cardHeader}>
-              <Text variant="bodyBold" color="dark" style={styles.cardTitle}>
-                Dashboard
-              </Text>
-              <View variant="row" style={styles.pillGroup}>
-                <Badge variant="subtle" style={styles.miniPill}>
-                  <Text variant="caption" color="primary" style={styles.pillText}>
-                    +24.5%
-                  </Text>
-                </Badge>
-                <Badge variant="success" style={styles.miniPill}>
-                  <Text variant="caption" color="success" style={styles.pillText}>
-                    1.7k
-                  </Text>
-                </Badge>
-                <Badge variant="warning" style={styles.miniPill}>
-                  <Text variant="caption" color="warning" style={styles.pillText}>
-                    Reach
-                  </Text>
-                </Badge>
-              </View>
-            </View>
-
-            {/* Weekly Posts Mini Bar Chart Mockup */}
-            <View style={styles.chartSection}>
-              <Text variant="caption" color="muted" style={styles.chartLabel}>
-                WEEKLY POSTS
-              </Text>
-              <View variant="row" style={styles.barsRow}>
-                {[35, 55, 40, 85, 60, 95, 70].map((height, i) => (
-                  <View key={i} style={styles.barColumn}>
-                    <View
-                      style={[
-                        styles.bar,
-                        { height: height * 0.45 },
-                        i === 5 ? styles.barActive : styles.barInactive,
-                      ]}
-                    />
-                    <Text variant="caption" color="muted" style={styles.barDayText}>
-                      {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {/* Upcoming Post Snippet */}
-            <View variant="row" style={styles.upcomingSnippet}>
-              <View style={styles.postDot} />
-              <View style={styles.upcomingDetails}>
-                <Text variant="bodyBold" color="dark" style={styles.upcomingTitle}>
-                  Upcoming Post
-                </Text>
-                <Text variant="caption" color="muted">
-                  Today 4:00 PM • Instagram
-                </Text>
-              </View>
-              <Badge variant="success" label="Done" />
-            </View>
-          </Card>
+          <CalendarDashboard 
+            width="100%" 
+            height={250} 
+            style={styles.dashboardCardImage} 
+          />
         </View>
 
         {/* Bottom Actions */}
@@ -162,6 +99,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   brandHeader: {
+    justifyContent: "center",
     gap: 8,
     marginTop: 4,
     marginBottom: 20,
@@ -176,22 +114,14 @@ const styles = StyleSheet.create({
     marginVertical: 'auto',
   },
   avatarOuterRing: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18,
-  },
-  avatarInnerCircle: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 24,
   },
   heading: {
     fontSize: 26,
@@ -229,6 +159,41 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: 9.5,
     fontWeight: '700',
+  },
+  dotsMenu: {
+    gap: 3,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.textMuted,
+  },
+  pillBlue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.infoBg,
+    gap: 4,
+    paddingHorizontal: 6,
+  },
+  pillGreen: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.successBg,
+    gap: 4,
+    paddingHorizontal: 6,
+  },
+  pillYellow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.warningBg,
+    gap: 4,
+    paddingHorizontal: 6,
+  },
+  pillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   chartSection: {
     marginBottom: 14,
@@ -283,6 +248,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 1,
   },
+  schedBadge: {
+    backgroundColor: Colors.infoBg,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  schedBadgeText: {
+    color: Colors.info,
+    fontSize: 10,
+    fontWeight: '700',
+  },
   bottomSection: {
     width: '100%',
     alignItems: 'center',
@@ -297,11 +273,6 @@ const styles = StyleSheet.create({
     height: 52,
     width: '100%',
     gap: 8,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
   whiteButtonText: {
     fontSize: 15,
@@ -315,5 +286,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  dashboardCardImage: {
+    width: '100%',
+    height: 250,
   },
 });

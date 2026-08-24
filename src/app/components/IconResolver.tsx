@@ -3,15 +3,27 @@ import { StyleProp, ViewStyle } from 'react-native';
 import { SvgProps } from 'react-native-svg';
 
 import InstagramIcon from '../../../assets/svgs/instagram.svg';
+import InstaPinkIcon from '../../../assets/svgs/insta-pink.svg';
 import TwitterIcon from '../../../assets/svgs/twitter.svg';
+import XBlackIcon from '../../../assets/svgs/x-black.svg';
 import LogoLightIcon from '../../../assets/svgs/logo-light.svg';
 import LogoDarkIcon from '../../../assets/svgs/logo-dark.svg';
+import GoogleIcon from '../../../assets/svgs/google.svg';
+import LinkedInIcon from '../../../assets/svgs/linkedin.svg';
+import PinterestIcon from '../../../assets/svgs/pinterest.svg';
+import InfoIcon from '../../../assets/svgs/info.svg';
 
 const svgMap = {
   instagram: InstagramIcon,
+  'insta-pink': InstaPinkIcon,
   twitter: TwitterIcon,
+  'x-black': XBlackIcon,
   logoLight: LogoLightIcon,
   logoDark: LogoDarkIcon,
+  google: GoogleIcon,
+  linkedin: LinkedInIcon,
+  pinterest: PinterestIcon,
+  info: InfoIcon,
 };
 
 export type IconName = keyof typeof svgMap;

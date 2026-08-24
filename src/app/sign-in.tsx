@@ -189,8 +189,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   signInButton: {
-    borderRadius: 14,
-    height: 50,
+    borderRadius: 26,
+    height: 52,
   },
   footer: {
     alignItems: 'center',

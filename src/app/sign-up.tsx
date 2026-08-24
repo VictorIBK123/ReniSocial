@@ -82,7 +82,7 @@ export default function SignUpScreen() {
           </View>
 
           {/* Step Indicator */}
-          <StepIndicator totalSteps={2} currentStep={1} />
+          <StepIndicator totalSteps={3} currentStep={1} />
 
           {/* Title Section */}
           <View style={styles.titleSection}>
@@ -115,11 +115,11 @@ export default function SignUpScreen() {
               <Checkbox checked={agreed} onChange={setAgreed}>
                 <Text variant="caption" color="muted" style={styles.termsText}>
                   I agree to the{' '}
-                  <Text variant="link" color="dark" style={styles.linkText}>
+                  <Text variant="link" color="primary" style={styles.linkText}>
                     Terms of Service
                   </Text>{' '}
                   and{' '}
-                  <Text variant="link" color="dark" style={styles.linkText}>
+                  <Text variant="link" color="primary" style={styles.linkText}>
                     Privacy Policy
                   </Text>
                 </Text>
@@ -224,8 +224,8 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   continueButton: {
-    borderRadius: 14,
-    height: 50,
+    borderRadius: 26,
+    height: 52,
   },
   socialRow: {
     gap: 12,

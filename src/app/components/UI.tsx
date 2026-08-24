@@ -1,24 +1,25 @@
-import React, { useState, useRef } from 'react';
+import { Feather } from '@expo/vector-icons';
+import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   NativeSyntheticEvent,
   Pressable,
-  StyleProp,
-  StyleSheet,
   Text as RNText,
   TextProps as RNTextProps,
+  View as RNView,
+  ViewProps as RNViewProps,
+  StyleProp,
+  StyleSheet,
   TextInput,
   TextInputKeyPressEventData,
   TextInputProps,
   TextStyle,
   TouchableOpacity,
   TouchableOpacityProps,
-  View as RNView,
-  ViewProps as RNViewProps,
   ViewStyle,
 } from 'react-native';
-import { Feather, FontAwesome5, AntDesign } from '@expo/vector-icons';
 import { Colors, Fonts } from '../../constant';
+import Icon from './IconResolver';
 
 /* ==========================================================================
    Re-export Colors for backward compat
@@ -339,7 +340,7 @@ export const Card: React.FC<CardProps> = ({
     cardVariantStyles.base,
     cardVariantStyles[variant],
     variant === 'interactive' &&
-      (active ? cardVariantStyles.interactiveActive : cardVariantStyles.interactiveInactive),
+    (active ? cardVariantStyles.interactiveActive : cardVariantStyles.interactiveInactive),
     style,
   ];
 
@@ -377,12 +378,9 @@ const cardVariantStyles = StyleSheet.create({
   solid: {
     backgroundColor: Colors.white,
     borderRadius: 16,
+    borderWidth: 1.2,
+    borderColor: Colors.borderLight,
     padding: 14,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
   },
   subtle: {
     backgroundColor: colors.bgLight,
@@ -400,16 +398,13 @@ const cardVariantStyles = StyleSheet.create({
   post: {
     backgroundColor: Colors.white,
     borderRadius: 15,
+    borderWidth: 1.2,
+    borderColor: Colors.borderLight,
     paddingVertical: 12,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
   },
   interactive: {
     flexDirection: 'row',
@@ -420,11 +415,8 @@ const cardVariantStyles = StyleSheet.create({
   },
   interactiveActive: {
     backgroundColor: Colors.white,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1.5,
+    borderColor: Colors.borderLight,
   },
   interactiveInactive: {
     backgroundColor: colors.glassBg,
@@ -555,19 +547,9 @@ const buttonVariantStyles = StyleSheet.create({
   },
   primary: {
     backgroundColor: colors.brandPrimary,
-    shadowColor: colors.brandPrimary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
   },
   primaryNavy: {
     backgroundColor: colors.brandDark,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
   },
   secondary: {
     backgroundColor: Colors.bgAccent,
@@ -592,11 +574,6 @@ const buttonVariantStyles = StyleSheet.create({
     borderRadius: 18,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   link: {
     backgroundColor: 'transparent',
@@ -892,11 +869,6 @@ const inputStyles = StyleSheet.create({
     borderRadius: 14,
     minHeight: 50,
     paddingHorizontal: 14,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
   },
   inputBoxFocused: {
     borderColor: Colors.brandPrimary,
@@ -1133,11 +1105,6 @@ const otpStyles = StyleSheet.create({
     fontSize: 22,
     fontFamily: Fonts.heading.bold,
     color: Colors.textDark,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
   },
   boxFilled: {
     borderColor: Colors.borderAccent,
@@ -1159,7 +1126,7 @@ export interface StepIndicatorProps {
 }
 
 export const StepIndicator: React.FC<StepIndicatorProps> = ({
-  totalSteps = 2,
+  totalSteps = 3,
   currentStep = 1,
   style,
 }) => {
@@ -1191,7 +1158,7 @@ const stepStyles = StyleSheet.create({
   },
   pillActive: {
     width: 26,
-    backgroundColor: Colors.brandNavy,
+    backgroundColor: Colors.brandPrimary,
   },
   pillInactive: {
     width: 7,
@@ -1224,8 +1191,8 @@ export const SocialButton: React.FC<SocialButtonProps> = ({
       ? 'Google'
       : 'Continue with Google'
     : compact
-    ? 'LinkedIn'
-    : 'Continue with LinkedIn';
+      ? 'LinkedIn'
+      : 'Continue with LinkedIn';
 
   return (
     <TouchableOpacity
@@ -1238,9 +1205,9 @@ export const SocialButton: React.FC<SocialButtonProps> = ({
       {...props}
     >
       {isGoogle ? (
-        <AntDesign name="google" size={18} color="#EA4335" style={socialBtnStyles.icon} />
+        <Icon name="google" size={18} style={socialBtnStyles.icon} />
       ) : (
-        <FontAwesome5 name="linkedin" size={18} color="#0A66C2" style={socialBtnStyles.icon} />
+        <Icon name="linkedin" size={18} style={socialBtnStyles.icon} />
       )}
       <RNText style={socialBtnStyles.title}>{title || defaultTitle}</RNText>
     </TouchableOpacity>
@@ -1255,15 +1222,10 @@ const socialBtnStyles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderWidth: 1.2,
     borderColor: Colors.borderLight,
-    borderRadius: 14,
-    height: 50,
+    borderRadius: 26,
+    height: 52,
     paddingHorizontal: 16,
     width: '100%',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
   },
   buttonCompact: {
     flex: 1,

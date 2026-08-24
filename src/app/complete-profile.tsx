@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import { Feather } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constant';
 import Icon from './components/IconResolver';
@@ -14,6 +14,7 @@ import {
   Badge,
   Button,
   Input,
+  StepIndicator,
   Text,
   View,
 } from './components/UI';
@@ -44,7 +45,8 @@ export default function CompleteProfileScreen() {
   return (
     <View variant="screen" style={[styles.container, { paddingTop: Math.max(insets.top + 20, 52) }]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? Math.max(insets.top + 20, 52) : 20}
         style={styles.keyboardView}
       >
         <ScrollView
@@ -62,6 +64,9 @@ export default function CompleteProfileScreen() {
               ReniSocial
             </Text>
           </View>
+
+          {/* Step Indicator */}
+          <StepIndicator totalSteps={3} currentStep={3} />
 
           {/* Email Verified Badge */}
           <View style={styles.badgeWrapper}>
@@ -243,8 +248,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   submitButton: {
-    borderRadius: 14,
-    height: 50,
+    borderRadius: 26,
+    height: 52,
     marginTop: 8,
   },
 });

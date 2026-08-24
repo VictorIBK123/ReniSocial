@@ -48,7 +48,7 @@ export default function OnboardingSlide5({
 
             {/* Bottom-Right: LinkedIn Badge */}
             <View style={styles.linkedInBadge}>
-              <FontAwesome5 name="linkedin-in" size={15} color={Colors.white} />
+              <Icon name="linkedin" size={16} color={Colors.white} />
             </View>
           </View>
 
@@ -168,11 +168,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 6,
     zIndex: 10,
   },
   instagramBadge: {
@@ -185,11 +180,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.instagram,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.instagram,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 3,
   },
   videoBadge: {
     position: 'absolute',
@@ -201,11 +191,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.purple,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.purple,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 3,
   },
   linkedInBadge: {
     position: 'absolute',
@@ -217,11 +202,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.linkedin,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.linkedin,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 3,
   },
   bottomCard: {
     width: '100%',

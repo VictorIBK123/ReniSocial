@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -6,7 +7,6 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constant';
 import Icon from './components/IconResolver';
@@ -76,7 +76,7 @@ export default function VerifyOtpScreen() {
           </View>
 
           {/* Step Indicator */}
-          <StepIndicator totalSteps={2} currentStep={2} />
+          <StepIndicator totalSteps={3} currentStep={2} />
 
           {/* Title Section */}
           <View style={styles.titleSection}>
@@ -84,10 +84,7 @@ export default function VerifyOtpScreen() {
               Check your inbox.
             </Text>
             <Text variant="body" color="muted" style={styles.subheading}>
-              Enter the 5-digit code sent to{' '}
-              <Text variant="bodyBold" color="dark">
-                {displayEmail}
-              </Text>
+              Enter the 5-digit code sent to {displayEmail}
             </Text>
           </View>
 
@@ -183,8 +180,8 @@ const styles = StyleSheet.create({
   },
   verifyButton: {
     width: '100%',
-    borderRadius: 14,
-    height: 50,
+    borderRadius: 26,
+    height: 52,
     marginTop: 18,
   },
   footer: {

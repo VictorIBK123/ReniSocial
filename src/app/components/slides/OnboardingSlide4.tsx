@@ -143,11 +143,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandPrimary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.brandPrimary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
   },
   managerAvatar: {
     width: 52,
@@ -156,11 +151,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandNavy,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.brandNavy,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
   },
   avatarText: {
     fontSize: 15,

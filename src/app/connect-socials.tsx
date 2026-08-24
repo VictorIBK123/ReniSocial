@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { Feather, FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Fonts } from '../constant';
+import { Colors } from '../constant';
+import Icon from './components/IconResolver';
 import {
   Button,
   Card,
@@ -19,7 +20,8 @@ interface SocialPlatform {
   id: string;
   name: string;
   defaultHandle: string;
-  iconName: string;
+  iconName?: string;
+  svgName?: string;
   iconBg: string;
 }
 
@@ -28,15 +30,15 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
     id: 'instagram',
     name: 'Instagram',
     defaultHandle: '@yourhandle',
-    iconName: 'instagram',
-    iconBg: '#E1306C',
+    svgName: 'insta-pink',
+    iconBg: 'transparent',
   },
   {
     id: 'twitter',
     name: 'Twitter / X',
     defaultHandle: '@yourhandle',
-    iconName: 'twitter',
-    iconBg: '#000000',
+    svgName: 'x-black',
+    iconBg: 'transparent',
   },
   {
     id: 'linkedin',
@@ -63,8 +65,8 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
     id: 'pinterest',
     name: 'Pinterest',
     defaultHandle: '@yourhandle',
-    iconName: 'pinterest-p',
-    iconBg: '#E60023',
+    svgName: 'pinterest',
+    iconBg: 'transparent',
   },
 ];
 
@@ -120,7 +122,11 @@ export default function ConnectSocialsScreen() {
               <Card key={platform.id} variant="solid" style={styles.platformCard}>
                 {/* Platform Icon Box */}
                 <View style={[styles.iconBox, { backgroundColor: platform.iconBg }]}>
-                  <FontAwesome5 name={platform.iconName} size={18} color={Colors.white} />
+                  {platform.svgName ? (
+                    <Icon name={platform.svgName as any} size={40} />
+                  ) : (
+                    <FontAwesome5 name={platform.iconName} size={18} color={Colors.white} />
+                  )}
                 </View>
 
                 {/* Platform Info */}
@@ -158,7 +164,7 @@ export default function ConnectSocialsScreen() {
         {/* Info Notice Box */}
         <View variant="row" style={styles.infoBox}>
           <View style={styles.infoIconCircle}>
-            <Feather name="info" size={14} color={Colors.info} />
+            <Icon name="info" size={14} color={Colors.info} />
           </View>
           <Text variant="caption" color="muted" style={styles.infoText}>
             You can always connect more accounts later from your workspace settings.
@@ -235,11 +241,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.2,
     borderColor: Colors.borderLight,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
   },
   iconBox: {
     width: 40,
@@ -260,8 +261,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   connectButton: {
-    borderWidth: 1.2,
-    borderColor: Colors.borderLight,
+    borderWidth: 1,
+    borderColor: Colors.brandPrimary,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   continueButton: {
-    borderRadius: 14,
+    borderRadius: 26,
     height: 52,
   },
   skipButton: {
