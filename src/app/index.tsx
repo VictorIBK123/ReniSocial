@@ -33,11 +33,11 @@ export default function Index() {
   };
 
   const handleSignIn = () => {
-    router.push('/sign-in' as any);
+    router.push('/(auth)/sign-in' as any);
   };
 
   const handleComplete = () => {
-    router.push('/sign-up' as any);
+    router.push('/(auth)/sign-up' as any);
   };
 
   return (

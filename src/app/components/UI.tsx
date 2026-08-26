@@ -1015,6 +1015,7 @@ export interface OtpInputProps {
   length?: number;
   value: string;
   onChange: (value: string) => void;
+  error?: boolean | string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -1022,12 +1023,13 @@ export const OtpInput: React.FC<OtpInputProps> = ({
   length = 5,
   value,
   onChange,
+  error,
   style,
 }) => {
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
   const handleChange = (text: string, index: number) => {
-    const cleanText = text.replace(/[^0-9]/g, '');
+    const cleanText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const chars = value.split('');
 
     if (cleanText.length > 1) {
@@ -1070,7 +1072,8 @@ export const OtpInput: React.FC<OtpInputProps> = ({
             ref={(ref) => {
               inputRefs.current[i] = ref;
             }}
-            keyboardType="number-pad"
+            keyboardType="default"
+            autoCapitalize="characters"
             maxLength={1}
             value={char}
             onChangeText={(text) => handleChange(text, i)}
@@ -1079,6 +1082,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
               otpStyles.box,
               isFilled && otpStyles.boxFilled,
               isCurrent && otpStyles.boxCurrent,
+              !!error && otpStyles.boxError,
             ]}
           />
         );
@@ -1112,6 +1116,10 @@ const otpStyles = StyleSheet.create({
   },
   boxCurrent: {
     borderColor: Colors.brandPrimary,
+  },
+  boxError: {
+    borderColor: Colors.danger,
+    backgroundColor: '#FFF8F8',
   },
 });
 

@@ -8,15 +8,16 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../constant';
-import Icon from './components/IconResolver';
+import { Colors } from '../../constant';
+import Icon from '../components/IconResolver';
 import {
   Button,
   OtpInput,
   StepIndicator,
   Text,
   View,
-} from './components/UI';
+} from '../components/UI';
+import { activateEmail } from '../../services/auth';
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function VerifyOtpScreen() {
   const [otp, setOtp] = useState('');
   const [timer, setTimer] = useState(42);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -36,15 +38,28 @@ export default function VerifyOtpScreen() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
+    if (otp.length < 5) {
+      setError('Please enter a valid 5-digit code');
+      return;
+    }
+    setError('');
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await activateEmail(displayEmail, otp);
       setLoading(false);
-      router.push({
-        pathname: '/complete-profile' as any,
-        params: { email: displayEmail },
-      });
-    }, 500);
+      if (response.status === true) {
+        router.push({
+          pathname: '/complete-profile' as any,
+          params: { email: displayEmail },
+        });
+      } else {
+        setError(response.message || 'Failed to verify code');
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.response?.data?.message || err.message || 'An error occurred during verification');
+    }
   };
 
   const handleResend = () => {
@@ -90,7 +105,16 @@ export default function VerifyOtpScreen() {
 
           {/* OTP Input Fields */}
           <View style={styles.otpSection}>
-            <OtpInput length={5} value={otp} onChange={setOtp} />
+            <OtpInput length={5} value={otp} error={error} onChange={(val) => {
+              setOtp(val);
+              if (error) setError('');
+            }} />
+
+            {error ? (
+              <Text variant="caption" color="danger" style={styles.errorText}>
+                {error}
+              </Text>
+            ) : null}
 
             {/* Countdown / Resend Action */}
             <TouchableOpacity
@@ -173,6 +197,10 @@ const styles = StyleSheet.create({
   resendContainer: {
     marginVertical: 12,
     paddingVertical: 4,
+  },
+  errorText: {
+    marginTop: 12,
+    textAlign: 'center',
   },
   resendText: {
     fontSize: 12.5,

@@ -12,6 +12,9 @@ import GoogleIcon from '../../../assets/svgs/google.svg';
 import LinkedInIcon from '../../../assets/svgs/linkedin.svg';
 import PinterestIcon from '../../../assets/svgs/pinterest.svg';
 import InfoIcon from '../../../assets/svgs/info.svg';
+import CalendarDashboardIcon from '../../../assets/svgs/calendar-dashboard.svg';
+import InstagramGradientIcon from '../../../assets/svgs/instagram-gradient.svg';
+import XIconIcon from '../../../assets/svgs/x-icon.svg';
 
 const svgMap = {
   instagram: InstagramIcon,
@@ -24,6 +27,9 @@ const svgMap = {
   linkedin: LinkedInIcon,
   pinterest: PinterestIcon,
   info: InfoIcon,
+  'calendar-dashboard': CalendarDashboardIcon,
+  'instagram-gradient': InstagramGradientIcon,
+  'x-icon': XIconIcon,
 };
 
 export type IconName = keyof typeof svgMap;

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -23,6 +23,8 @@ import {
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
+
+import { useAuthStore } from '../store/authStore';
 
 // Keep the native splash screen visible until fonts are loaded
 SplashScreen.preventAutoHideAsync();
@@ -56,58 +58,35 @@ export default function RootLayout() {
     return null;
   }
 
+  return <RootLayoutNav />;
+}
+
+function RootLayoutNav() {
+  const { isAuthenticated } = useAuthStore();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    const inAuthGroup = segments[0] === '(auth)' || (segments as string[]).length === 0 || (segments as string[])[0] === 'index';
+    
+    if (isAuthenticated) {
+      router.replace('/(tabs)/dashboard');
+    } else if (!isAuthenticated && !inAuthGroup) {
+      router.replace('/');
+    }
+  }, [isAuthenticated]);
+
   return (
     <SafeAreaProvider>
       <Stack
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
-          contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       >
-        <Stack.Screen
-          name="index"
-          options={{
-            animation: 'fade',
-          }}
-        />
-        <Stack.Screen
-          name="sign-in"
-          options={{
-            animation: 'slide_from_right',
-          }}
-        />
-        <Stack.Screen
-          name="sign-up"
-          options={{
-            animation: 'slide_from_right',
-          }}
-        />
-        <Stack.Screen
-          name="verify-otp"
-          options={{
-            animation: 'slide_from_right',
-          }}
-        />
-        <Stack.Screen
-          name="complete-profile"
-          options={{
-            animation: 'slide_from_right',
-          }}
-        />
-        <Stack.Screen
-          name="welcome-success"
-          options={{
-            animation: 'fade',
-            contentStyle: { backgroundColor: '#001E88' },
-          }}
-        />
-        <Stack.Screen
-          name="connect-socials"
-          options={{
-            animation: 'slide_from_right',
-          }}
-        />
+        <Stack.Screen name="index" options={{ animation: 'fade' }} />
+        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
       </Stack>
     </SafeAreaProvider>
   );

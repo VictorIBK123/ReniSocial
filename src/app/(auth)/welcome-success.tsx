@@ -5,21 +5,20 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import CalendarDashboard from '../../assets/svgs/calendar-dashboard.svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../constant';
-import Icon from './components/IconResolver';
+import { Colors } from '../../constant';
+import Icon from '../components/IconResolver';
 import {
   Text,
   View
-} from './components/UI';
+} from '../components/UI';
 
 export default function WelcomeSuccessScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const handleGoDashboard = () => {
-    router.replace('/');
+    router.replace('/(tabs)/dashboard');
   };
 
   return (
@@ -53,7 +52,8 @@ export default function WelcomeSuccessScreen() {
           </Text>
 
           {/* Dashboard Preview Card */}
-          <CalendarDashboard 
+          <Icon
+            name="calendar-dashboard"
             width="100%" 
             height={250} 
             style={styles.dashboardCardImage} 

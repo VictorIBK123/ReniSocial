@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../constant';
-import Icon from './components/IconResolver';
+import { Colors } from '../../constant';
+import Icon from '../components/IconResolver';
 import {
   Button,
   Checkbox,
@@ -18,23 +18,61 @@ import {
   SocialButton,
   Text,
   View,
-} from './components/UI';
+} from '../components/UI';
+import { login } from '../../services/auth';
+import { validatePassword } from '../../utils/test-password';
+import { useAuthStore } from '../../store/authStore';
 
 export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { setUser } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+    
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.message);
+      return;
+    }
+    
+    setError('');
     setLoading(true);
-    setTimeout(() => {
+    
+    try {
+      const response = await login(email, password);
       setLoading(false);
-      router.push('/welcome-success' as any);
-    }, 600);
+      
+      if (response.status === true) {
+        setUser({
+          email: response.data.mail,
+          username: response.data.username,
+          token: response.data.token,
+          firstName: response.data.fname,
+          lastName: response.data.lname,
+          fullName: response.data.fullname,
+          gender: response.data.gender,
+          phone: response.data.phone,
+        });
+        // We do not need to route manually if _layout automatically redirects based on authState
+        // router.push('/welcome-success' as any);
+      } else {
+        setError(response.message || 'Failed to sign in');
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.response?.data?.message || err.message || 'An error occurred during sign in');
+    }
   };
 
   return (
@@ -78,7 +116,10 @@ export default function SignInScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(val) => {
+                setEmail(val);
+                if (error) setError('');
+              }}
             />
 
             <Input
@@ -86,7 +127,10 @@ export default function SignInScreen() {
               placeholder="••••••••"
               isPassword
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(val) => {
+                setPassword(val);
+                if (error) setError('');
+              }}
             />
 
             {/* Remember Me & Forgot Password Row */}
@@ -102,6 +146,12 @@ export default function SignInScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+
+            {error ? (
+              <Text variant="caption" color="danger" style={styles.errorText}>
+                {error}
+              </Text>
+            ) : null}
 
             {/* Primary Action */}
             <Button
@@ -191,6 +241,12 @@ const styles = StyleSheet.create({
   signInButton: {
     borderRadius: 26,
     height: 52,
+    marginTop: 8,
+  },
+  errorText: {
+    marginTop: 8,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   footer: {
     alignItems: 'center',

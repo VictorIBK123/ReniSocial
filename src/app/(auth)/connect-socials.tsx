@@ -7,14 +7,14 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../constant';
-import Icon from './components/IconResolver';
+import { Colors } from '../../constant';
+import Icon from '../components/IconResolver';
 import {
   Button,
   Card,
   Text,
   View,
-} from './components/UI';
+} from '../components/UI';
 
 interface SocialPlatform {
   id: string;

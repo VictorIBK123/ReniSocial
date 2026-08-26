@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../constant';
-import Icon from './components/IconResolver';
+import { Colors } from '../../constant';
+import Icon from '../components/IconResolver';
 import {
   Button,
   Checkbox,
@@ -19,7 +19,8 @@ import {
   StepIndicator,
   Text,
   View,
-} from './components/UI';
+} from '../components/UI';
+import { registerEmail } from '../../services/auth';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function SignUpScreen() {
     return /\S+@\S+\.\S+/.test(val);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!email) {
       setError('Please enter a valid email address');
       return;
@@ -50,13 +51,22 @@ export default function SignUpScreen() {
 
     setError('');
     setLoading(true);
-    setTimeout(() => {
+    
+    try {
+      const response = await registerEmail(email);
       setLoading(false);
-      router.push({
-        pathname: '/verify-otp' as any,
-        params: { email },
-      });
-    }, 500);
+      if (response.status === true) {
+        router.push({
+          pathname: '/verify-otp' as any,
+          params: { email },
+        });
+      } else {
+        setError(response.message || 'Failed to register email');
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.response?.data?.message || err.message || 'An error occurred during registration');
+    }
   };
 
   return (
@@ -110,7 +120,6 @@ export default function SignUpScreen() {
               }}
             />
 
-            {/* Terms of Service Checkbox */}
             <View style={styles.termsRow}>
               <Checkbox checked={agreed} onChange={setAgreed}>
                 <Text variant="caption" color="muted" style={styles.termsText}>
@@ -125,6 +134,12 @@ export default function SignUpScreen() {
                 </Text>
               </Checkbox>
             </View>
+
+            {error ? (
+              <Text variant="caption" color="danger" style={styles.errorText}>
+                {error}
+              </Text>
+            ) : null}
 
             {/* Primary Continue Button */}
             <Button
@@ -226,6 +241,12 @@ const styles = StyleSheet.create({
   continueButton: {
     borderRadius: 26,
     height: 52,
+    marginTop: 8,
+  },
+  errorText: {
+    marginTop: 12,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   socialRow: {
     gap: 12,
