@@ -5,7 +5,7 @@ import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constant';
 import { useAuthStore } from '../../store/authStore';
-import { Text, View } from '../components/UI';
+import { Text, View, Card, Badge } from '../components/UI';
 import Icon from '../components/IconResolver';
 import DashboardHeader from '../components/DashboardHeader';
 
@@ -64,50 +64,50 @@ export default function DashboardScreen() {
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
+            <Card style={{ flex: 1 }}>
               <View style={styles.statHeader}>
                 <Text variant="caption" style={styles.statLabel}>TOTAL POSTS</Text>
-                <View style={styles.badgeSuccess}><Text style={styles.badgeSuccessText}>↑ +12%</Text></View>
+                <Badge variant="success" label="↑ +12%" />
               </View>
               <Text variant="heading" style={styles.statValue}>48</Text>
-            </View>
-            <View style={styles.statCard}>
+            </Card>
+            <Card style={{ flex: 1 }}>
               <View style={styles.statHeader}>
                 <Text variant="caption" style={styles.statLabel}>SCHEDULED</Text>
-                <View style={styles.badgeInfo}><Text style={styles.badgeInfoText}>Upcoming</Text></View>
+                <Badge variant="info" label="Upcoming" />
               </View>
               <Text variant="heading" style={styles.statValue}>14</Text>
-            </View>
+            </Card>
           </View>
 
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
+            <Card style={{ flex: 1 }}>
               <View style={styles.statHeader}>
                 <Text variant="caption" style={styles.statLabel}>DRAFT</Text>
-                <View style={styles.badgeSuccess}><Text style={styles.badgeSuccessText}>↑ +8%</Text></View>
+                <Badge variant="success" label="↑ +8%" />
               </View>
               <Text variant="heading" style={styles.statValue}>10</Text>
-            </View>
-            <View style={styles.statCard}>
+            </Card>
+            <Card style={{ flex: 1 }}>
               <View style={styles.statHeader}>
                 <Text variant="caption" style={styles.statLabel}>FAILED</Text>
-                <View style={styles.badgeDanger}><Text style={styles.badgeDangerText}>↓ -25%</Text></View>
+                <Badge variant="danger" label="↓ -25%" />
               </View>
               <Text variant="heading" style={styles.statValue}>3</Text>
-            </View>
+            </Card>
           </View>
 
-          <View style={styles.statCardFull}>
+          <Card>
             <View style={styles.statHeader}>
               <Text variant="caption" style={styles.statLabel}>PUBLISHED</Text>
-              <View style={styles.badgeSuccess}><Text style={styles.badgeSuccessText}>↑ +8%</Text></View>
+              <Badge variant="success" label="↑ +8%" />
             </View>
             <Text variant="heading" style={styles.statValue}>31</Text>
-          </View>
+          </Card>
         </View>
 
         {/* Publishing Activity Chart */}
-        <View style={styles.sectionCard}>
+        <Card style={{ marginHorizontal: 16, marginBottom: 24 }}>
           <Text variant="bodyBold" style={styles.sectionTitle}>Publishing Activity</Text>
           <View style={styles.chartContainer}>
             <BarChart
@@ -127,10 +127,10 @@ export default function DashboardScreen() {
               height={100}
             />
           </View>
-        </View>
+        </Card>
 
         {/* Platform Distribution */}
-        <View style={styles.sectionCard}>
+        <Card style={{ marginHorizontal: 16, marginBottom: 24 }}>
           <Text variant="bodyBold" style={styles.sectionTitle}>Platform Distribution</Text>
           <View style={styles.donutContainer}>
             <PieChart
@@ -173,13 +173,13 @@ export default function DashboardScreen() {
               </View>
             </View>
           </View>
-        </View>
+        </Card>
 
         {/* Platform Overview */}
         <Text variant="bodyBold" style={[styles.sectionTitle, { marginLeft: 24, marginTop: 16 }]}>Platform Overview</Text>
         <View style={styles.platformGrid}>
           {/* Instagram */}
-          <View style={styles.platformCard}>
+          <Card style={{ width: '48%' }}>
             <View style={styles.platformHeader}>
               <View style={[styles.platformIconBg, { backgroundColor: '#E1306C' }]}>
                 <Icon name="instagram-gradient" size={14} color="#FFF" />
@@ -187,9 +187,9 @@ export default function DashboardScreen() {
               <Text variant="caption" style={styles.platformName}>INSTAGRAM</Text>
             </View>
             <Text variant="heading" style={styles.platformValue}>5</Text>
-          </View>
+          </Card>
           {/* X */}
-          <View style={styles.platformCard}>
+          <Card style={{ width: '48%' }}>
             <View style={styles.platformHeader}>
               <View style={[styles.platformIconBg, { backgroundColor: '#000000' }]}>
                 <Icon name="x-icon" size={14} color="#FFF" />
@@ -197,9 +197,9 @@ export default function DashboardScreen() {
               <Text variant="caption" style={styles.platformName}>X/TWITTER</Text>
             </View>
             <Text variant="heading" style={styles.platformValue}>14</Text>
-          </View>
+          </Card>
           {/* LinkedIn */}
-          <View style={styles.platformCard}>
+          <Card style={{ width: '48%' }}>
             <View style={styles.platformHeader}>
               <View style={[styles.platformIconBg, { backgroundColor: '#0A66C2' }]}>
                 <Icon name="linkedin" size={14} color="#FFF" />
@@ -207,9 +207,9 @@ export default function DashboardScreen() {
               <Text variant="caption" style={styles.platformName}>LINKEDIN</Text>
             </View>
             <Text variant="heading" style={styles.platformValue}>10</Text>
-          </View>
+          </Card>
           {/* TikTok */}
-          <View style={styles.platformCard}>
+          <Card style={{ width: '48%' }}>
             <View style={styles.platformHeader}>
               <View style={[styles.platformIconBg, { backgroundColor: '#000000' }]}>
                 <FontAwesome5 name="tiktok" size={14} color="#FFF" />
@@ -217,9 +217,9 @@ export default function DashboardScreen() {
               <Text variant="caption" style={styles.platformName}>TIKTOK</Text>
             </View>
             <Text variant="heading" style={styles.platformValue}>3</Text>
-          </View>
+          </Card>
           {/* Facebook */}
-          <View style={styles.platformCard}>
+          <Card style={{ width: '48%' }}>
             <View style={styles.platformHeader}>
               <View style={[styles.platformIconBg, { backgroundColor: '#1877F2' }]}>
                 <FontAwesome5 name="facebook-f" size={14} color="#FFF" />
@@ -227,9 +227,9 @@ export default function DashboardScreen() {
               <Text variant="caption" style={styles.platformName}>FACEBOOK</Text>
             </View>
             <Text variant="heading" style={styles.platformValue}>2</Text>
-          </View>
+          </Card>
           {/* Pinterest */}
-          <View style={styles.platformCard}>
+          <Card style={{ width: '48%' }}>
             <View style={styles.platformHeader}>
               <View style={[styles.platformIconBg, { backgroundColor: '#E60023' }]}>
                 <Icon name="pinterest" size={14} color="#FFF" />
@@ -237,11 +237,11 @@ export default function DashboardScreen() {
               <Text variant="caption" style={styles.platformName}>PINTEREST</Text>
             </View>
             <Text variant="heading" style={styles.platformValue}>0</Text>
-          </View>
+          </Card>
         </View>
 
         {/* Recent Activity */}
-        <View style={styles.sectionCard}>
+        <Card style={{ marginHorizontal: 16, marginBottom: 24 }}>
           <Text variant="bodyBold" style={styles.sectionTitle}>Recent Activity</Text>
 
           <View style={styles.activityItem}>
@@ -285,7 +285,7 @@ export default function DashboardScreen() {
             </View>
           </View>
 
-        </View>
+        </Card>
 
         {/* Bottom spacer for FAB & Tab bar */}
         <View style={{ height: 100 }} />
@@ -421,21 +421,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  statCardFull: {
-    backgroundColor: Colors.white,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
   statHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -450,48 +435,8 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 28,
-  },
-  badgeSuccess: {
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgeSuccessText: {
-    color: '#10B981',
-    fontSize: 10,
-    fontFamily: 'PlusJakartaSans_700Bold',
-  },
-  badgeDanger: {
-    backgroundColor: '#FEF2F2',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgeDangerText: {
-    color: '#EF4444',
-    fontSize: 10,
-    fontFamily: 'PlusJakartaSans_700Bold',
-  },
-  badgeInfo: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgeInfoText: {
-    color: '#3B82F6',
-    fontSize: 10,
-    fontFamily: 'PlusJakartaSans_700Bold',
-  },
-  sectionCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
+    lineHeight: 36,
+    includeFontPadding: false,
   },
   sectionTitle: {
     fontSize: 16,
@@ -537,14 +482,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
     marginBottom: 24,
-  },
-  platformCard: {
-    width: '48%',
-    backgroundColor: Colors.white,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
   },
   platformHeader: {
     flexDirection: 'row',

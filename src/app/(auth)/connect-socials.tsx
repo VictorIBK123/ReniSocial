@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constant';
@@ -27,53 +28,56 @@ interface SocialPlatform {
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
   {
-    id: 'instagram',
-    name: 'Instagram',
-    defaultHandle: '@yourhandle',
-    svgName: 'insta-pink',
-    iconBg: 'transparent',
-  },
-  {
-    id: 'twitter',
-    name: 'Twitter / X',
-    defaultHandle: '@yourhandle',
-    svgName: 'x-black',
-    iconBg: 'transparent',
-  },
-  {
     id: 'linkedin',
     name: 'LinkedIn',
-    defaultHandle: '@yourhandle',
+    defaultHandle: 'Not connected',
     iconName: 'linkedin-in',
-    iconBg: '#0A66C2',
+    iconBg: '#0077B5',
+  },
+  {
+    id: 'x',
+    name: 'X (Twitter)',
+    defaultHandle: 'Not connected',
+    svgName: 'x-icon',
+    iconBg: '#000000',
+  },
+  {
+    id: 'instagram',
+    name: 'Instagram',
+    defaultHandle: 'Not connected',
+    svgName: 'instagram-gradient',
+    iconBg: '#E1306C',
   },
   {
     id: 'tiktok',
     name: 'TikTok',
-    defaultHandle: '@yourhandle',
+    defaultHandle: 'Not connected',
     iconName: 'tiktok',
     iconBg: '#000000',
   },
   {
     id: 'facebook',
     name: 'Facebook',
-    defaultHandle: '@yourhandle',
+    defaultHandle: 'Not connected',
     iconName: 'facebook-f',
     iconBg: '#1877F2',
   },
   {
     id: 'pinterest',
     name: 'Pinterest',
-    defaultHandle: '@yourhandle',
-    svgName: 'pinterest',
-    iconBg: 'transparent',
+    defaultHandle: 'Not connected',
+    iconName: 'pinterest-p',
+    iconBg: '#BD081C',
   },
 ];
 
 export default function ConnectSocialsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [connectedMap, setConnectedMap] = useState<Record<string, boolean>>({});
+  const [connectedMap, setConnectedMap] = useState<Record<string, boolean>>({
+    linkedin: true,
+    x: true,
+  });
 
   const toggleConnect = (id: string) => {
     setConnectedMap((prev) => ({
@@ -83,30 +87,22 @@ export default function ConnectSocialsScreen() {
   };
 
   const handleFinish = () => {
-    router.replace('/');
+    router.replace('/(tabs)/dashboard');
   };
 
   return (
-    <View variant="screen" style={[styles.container, { paddingTop: Math.max(insets.top + 20, 52) }]}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom + 20, 28) },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Eyebrow Label */}
-        <View variant="row" style={styles.eyebrowRow}>
-          <View style={styles.eyebrowDot} />
-          <Text variant="eyebrow" color="primary" style={styles.eyebrowText}>
-            BONUS STEP
-          </Text>
-        </View>
-
-        {/* Title & Subtitle */}
+    <ScrollView
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.container}>
+        {/* Header Title Section */}
         <View style={styles.titleSection}>
           <Text variant="heading" color="dark" style={styles.heading}>
-            Connect your social{'\n'}accounts
+            Connect Social Accounts
           </Text>
           <Text variant="body" color="muted" style={styles.subheading}>
             Link your profiles to start scheduling posts and tracking analytics.
@@ -115,50 +111,56 @@ export default function ConnectSocialsScreen() {
 
         {/* Social Accounts List */}
         <View style={styles.platformList}>
-          {SOCIAL_PLATFORMS.map((platform) => {
-            const isConnected = !!connectedMap[platform.id];
+          <FlatList
+            data={SOCIAL_PLATFORMS}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={false}
+            ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+            renderItem={({ item: platform }) => {
+              const isConnected = !!connectedMap[platform.id];
 
-            return (
-              <Card key={platform.id} variant="solid" style={styles.platformCard}>
-                {/* Platform Icon Box */}
-                <View style={[styles.iconBox, { backgroundColor: platform.iconBg }]}>
-                  {platform.svgName ? (
-                    <Icon name={platform.svgName as any} size={40} />
-                  ) : (
-                    <FontAwesome5 name={platform.iconName} size={18} color={Colors.white} />
-                  )}
-                </View>
+              return (
+                <Card variant="solid" style={styles.platformCard}>
+                  {/* Platform Icon Box */}
+                  <View style={[styles.iconBox, { backgroundColor: platform.iconBg }]}>
+                    {platform.svgName ? (
+                      <Icon name={platform.svgName as any} size={40} />
+                    ) : (
+                      <FontAwesome5 name={platform.iconName} size={18} color={Colors.white} />
+                    )}
+                  </View>
 
-                {/* Platform Info */}
-                <View style={styles.platformInfo}>
-                  <Text variant="bodyBold" color="dark" style={styles.platformName}>
-                    {platform.name}
-                  </Text>
-                  <Text variant="caption" color={isConnected ? 'primary' : 'muted'} style={styles.handleText}>
-                    {isConnected ? '@reniteam' : platform.defaultHandle}
-                  </Text>
-                </View>
+                  {/* Platform Info */}
+                  <View style={styles.platformInfo}>
+                    <Text variant="bodyBold" color="dark" style={styles.platformName}>
+                      {platform.name}
+                    </Text>
+                    <Text variant="caption" color={isConnected ? 'primary' : 'muted'} style={styles.handleText}>
+                      {isConnected ? '@reniteam' : platform.defaultHandle}
+                    </Text>
+                  </View>
 
-                {/* Connect / Connected Button */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => toggleConnect(platform.id)}
-                  style={[
-                    styles.connectButton,
-                    isConnected && styles.connectButtonActive,
-                  ]}
-                >
-                  <Text
-                    variant="caption"
-                    color={isConnected ? 'white' : 'dark'}
-                    style={styles.connectButtonText}
+                  {/* Connect / Connected Button */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => toggleConnect(platform.id)}
+                    style={[
+                      styles.connectButton,
+                      isConnected && styles.connectButtonActive,
+                    ]}
                   >
-                    {isConnected ? 'Connected' : 'Connect'}
-                  </Text>
-                </TouchableOpacity>
-              </Card>
-            );
-          })}
+                    <Text
+                      variant="caption"
+                      color={isConnected ? 'white' : 'dark'}
+                      style={styles.connectButtonText}
+                    >
+                      {isConnected ? 'Connected' : 'Connect'}
+                    </Text>
+                  </TouchableOpacity>
+                </Card>
+              );
+            }}
+          />
         </View>
 
         {/* Info Notice Box */}
@@ -187,8 +189,8 @@ export default function ConnectSocialsScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -199,7 +201,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 22,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   eyebrowRow: {
     gap: 6,

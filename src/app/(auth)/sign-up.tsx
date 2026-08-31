@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     justifyContent: 'space-between',
   },
   brandHeader: {

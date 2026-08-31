@@ -378,9 +378,9 @@ const cardVariantStyles = StyleSheet.create({
   solid: {
     backgroundColor: Colors.white,
     borderRadius: 16,
-    borderWidth: 1.2,
+    borderWidth: 1,
     borderColor: Colors.borderLight,
-    padding: 14,
+    padding: 16,
   },
   subtle: {
     backgroundColor: colors.bgLight,
@@ -688,9 +688,9 @@ export const Badge: React.FC<BadgeProps> = ({
 
 const badgeVariantStyles = StyleSheet.create({
   base: {
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
