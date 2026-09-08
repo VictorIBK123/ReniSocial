@@ -7,6 +7,8 @@ import { Feather } from '@expo/vector-icons';
 import { Icon } from '../components/IconResolver';
 import DashboardHeader from '../components/DashboardHeader';
 import { useRouter } from 'expo-router';
+import { useTheme } from '../../hooks/useTheme';
+import InviteMemberModal, { TeamRole } from '../components/workspace/InviteMemberModal';
 
 interface Member {
     id: string;
@@ -68,6 +70,21 @@ export default function WorkspaceScreen() {
     const [brandName, setBrandName] = useState('Acme Corp Global');
     const [description, setDescription] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+    const [pendingInvites, setPendingInvites] = useState<{ id: string; email: string; role: TeamRole }[]>(PENDING_INVITES as { id: string; email: string; role: TeamRole }[]);
+
+    const handleSendInvite = (email: string, role: TeamRole) => {
+        const newInvite = {
+            id: Date.now().toString(),
+            email,
+            role,
+        };
+        setPendingInvites((prev) => [newInvite, ...prev]);
+    };
+
+    const handleRevokeInvite = (id: string) => {
+        setPendingInvites((prev) => prev.filter((item) => item.id !== id));
+    };
 
     const filteredMembers = MEMBERS.filter(
         (m) =>
@@ -104,15 +121,17 @@ export default function WorkspaceScreen() {
         }
     };
 
+    const { colors } = useTheme();
+
     return (
-        <SafeAreaView edges={['top']} style={styles.container}>
+        <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.bgApp }]}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <DashboardHeader />
 
                 {/* Back Button & Title */}
                 <View style={styles.headerSection}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <Feather name="arrow-left" size={20} color={Colors.brandPrimary} />
+                    <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.bgAccent }]} onPress={() => router.back()}>
+                        <Feather name="arrow-left" size={20} color={colors.brandPrimary} />
                     </TouchableOpacity>
                     <Text variant="heading" color="primary" style={styles.pageTitle}>Workspace</Text>
                     <Text variant="body" color="dark" style={styles.pageSubtitle}>
@@ -122,22 +141,22 @@ export default function WorkspaceScreen() {
 
                 {/* View Toggles */}
                 <View style={styles.tabsContainer}>
-                    <View style={styles.tabGroup}>
+                    <View style={[styles.tabGroup, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}>
                         <TouchableOpacity
-                            style={[styles.tabButton, activeTab === 'Workspace Details' && styles.tabButtonActive]}
+                            style={[styles.tabButton, activeTab === 'Workspace Details' && [styles.tabButtonActive, { backgroundColor: colors.brandPrimary }]]}
                             onPress={() => setActiveTab('Workspace Details')}
                         >
                             <Icon
                                 name="workspace"
                                 size={16}
-                                color={activeTab === 'Workspace Details' ? Colors.white : Colors.brandPrimary}
+                                color={activeTab === 'Workspace Details' ? '#FFFFFF' : colors.brandPrimary}
                             />
                             <Text
                                 variant="bodyBold"
                                 style={{
                                     marginLeft: 6,
                                     fontSize: 13,
-                                    color: activeTab === 'Workspace Details' ? Colors.white : Colors.brandPrimary,
+                                    color: activeTab === 'Workspace Details' ? '#FFFFFF' : colors.brandPrimary,
                                 }}
                             >
                                 Workspace Details
@@ -145,20 +164,20 @@ export default function WorkspaceScreen() {
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            style={[styles.tabButton, activeTab === 'Team Members' && styles.tabButtonActive]}
+                            style={[styles.tabButton, activeTab === 'Team Members' && [styles.tabButtonActive, { backgroundColor: colors.brandPrimary }]]}
                             onPress={() => setActiveTab('Team Members')}
                         >
                             <Icon
                                 name="team-fill"
                                 size={16}
-                                color={activeTab === 'Team Members' ? Colors.white : Colors.brandPrimary}
+                                color={activeTab === 'Team Members' ? '#FFFFFF' : colors.brandPrimary}
                             />
                             <Text
                                 variant="bodyBold"
                                 style={{
                                     marginLeft: 6,
                                     fontSize: 13,
-                                    color: activeTab === 'Team Members' ? Colors.white : Colors.brandPrimary,
+                                    color: activeTab === 'Team Members' ? '#FFFFFF' : colors.brandPrimary,
                                 }}
                             >
                                 Team Members
@@ -257,7 +276,7 @@ export default function WorkspaceScreen() {
                                     <Text variant="caption" weight="bold" style={styles.cardLabelText}>
                                         PENDING INVITES
                                     </Text>
-                                    <Text style={styles.metricValue}>2</Text>
+                                    <Text style={styles.metricValue}>{pendingInvites.length}</Text>
                                 </View>
                                 <Feather name="mail" size={28} color={Colors.brandPrimary} />
                             </View>
@@ -301,7 +320,11 @@ export default function WorkspaceScreen() {
                                     onChangeText={setSearchQuery}
                                 />
                             </View>
-                            <TouchableOpacity activeOpacity={0.8} style={styles.inviteButton}>
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                style={styles.inviteButton}
+                                onPress={() => setIsInviteModalVisible(true)}
+                            >
                                 <Feather name="user-plus" size={16} color={Colors.white} />
                                 <Text variant="bodyBold" style={styles.inviteButtonText}>
                                     Invite
@@ -366,13 +389,13 @@ export default function WorkspaceScreen() {
                             </View>
                             <View style={styles.countBadge}>
                                 <Text variant="caption" style={styles.countBadgeText}>
-                                    {PENDING_INVITES.length}
+                                    {pendingInvites.length}
                                 </Text>
                             </View>
                         </View>
 
                         <FlatList
-                            data={PENDING_INVITES}
+                            data={pendingInvites}
                             keyExtractor={(item) => item.id}
                             scrollEnabled={false}
                             ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -387,7 +410,10 @@ export default function WorkspaceScreen() {
                                                 Invited as {invite.role}
                                             </Text>
                                         </View>
-                                        <TouchableOpacity activeOpacity={0.7}>
+                                        <TouchableOpacity
+                                            activeOpacity={0.7}
+                                            onPress={() => handleRevokeInvite(invite.id)}
+                                        >
                                             <Text variant="bodyBold" style={styles.revokeText}>
                                                 Revoke
                                             </Text>
@@ -447,6 +473,12 @@ export default function WorkspaceScreen() {
 
                 <View style={{ height: 120 }} />
             </ScrollView>
+
+            <InviteMemberModal
+                visible={isInviteModalVisible}
+                onClose={() => setIsInviteModalVisible(false)}
+                onSendInvite={handleSendInvite}
+            />
         </SafeAreaView>
     );
 }

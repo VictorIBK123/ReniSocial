@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Icon } from '../components/IconResolver';
 import NewPostComposer from '../components/NewPostComposer';
 import { useComposerStore } from '../../store/composerStore';
+import { useTheme } from '../../hooks/useTheme';
 
 function TabBarIcon({ name, color }: { name: any; color: any }) {
   return <Feather size={24} style={{ marginBottom: -3 }} name={name} color={color} />;
@@ -15,6 +16,7 @@ function TabBarIcon({ name, color }: { name: any; color: any }) {
 export default function TabLayout() {
   const [isMoreMenuVisible, setIsMoreMenuVisible] = useState(false);
   const { openComposer } = useComposerStore();
+  const { colors } = useTheme();
   const segments = useSegments();
   const router = useRouter();
 
@@ -22,16 +24,17 @@ export default function TabLayout() {
   const isMoreActive = currentRoute === 'settings' || currentRoute === 'workspace';
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bgApp }}>
       <Tabs
         initialRouteName="dashboard"
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: Colors.brandPrimary,
-          tabBarInactiveTintColor: Colors.textMuted,
+          tabBarActiveTintColor: colors.brandPrimary,
+          tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: {
+            backgroundColor: colors.bgCard,
             borderTopWidth: 1,
-            borderTopColor: Colors.borderLight,
+            borderTopColor: colors.borderLight,
             height: 80,
             paddingBottom: 24,
             paddingTop: 8,
@@ -87,17 +90,17 @@ export default function TabLayout() {
           options={{
             title: 'More',
             tabBarIcon: ({ color }) => (
-              <View style={isMoreActive ? styles.activeMoreIconWrapper : null}>
+              <View style={isMoreActive ? [styles.activeMoreIconWrapper, { backgroundColor: colors.bgAccent }] : null}>
                 <Feather 
                   name="settings" 
-                  color={isMoreActive ? Colors.brandPrimary : color} 
+                  color={isMoreActive ? colors.brandPrimary : color} 
                   size={24} 
                   style={{ marginBottom: -3 }} 
                 />
               </View>
             ),
             tabBarLabel: ({ color }) => (
-              <Text style={[styles.tabLabel, { color: isMoreActive ? Colors.brandPrimary : color }]}>
+              <Text style={[styles.tabLabel, { color: isMoreActive ? colors.brandPrimary : color }]}>
                 More
               </Text>
             )
@@ -117,33 +120,33 @@ export default function TabLayout() {
           style={styles.overlay} 
           onPress={() => setIsMoreMenuVisible(false)}
         >
-          <View style={styles.moreMenuContainer}>
+          <View style={[styles.moreMenuContainer, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}>
             <TouchableOpacity 
-              style={styles.moreMenuItem}
+              style={[styles.moreMenuItem, { borderColor: colors.borderLight }]}
               onPress={() => {
                 setIsMoreMenuVisible(false);
                 router.navigate('/workspace');
               }}
             >
-              <Icon name="workspace" size={18} color={Colors.textDark} />
+              <Icon name="workspace" size={18} color={colors.textDark} />
               <View style={styles.moreMenuTextContainer}>
                 <View style={styles.moreMenuTextWrapper}>
-                  <Text style={styles.moreMenuText}>Workspace</Text>
+                  <Text style={[styles.moreMenuText, { color: colors.textDark }]}>Workspace</Text>
                 </View>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.moreMenuItem}
+              style={[styles.moreMenuItem, { borderColor: colors.borderLight }]}
               onPress={() => {
                 setIsMoreMenuVisible(false);
                 router.navigate('/settings');
               }}
             >
-              <Feather name="settings" size={18} color={Colors.textDark} />
+              <Feather name="settings" size={18} color={colors.textDark} />
               <View style={styles.moreMenuTextContainer}>
                 <View style={styles.moreMenuTextWrapper}>
-                  <Text style={styles.moreMenuText}>Settings</Text>
+                  <Text style={[styles.moreMenuText, { color: colors.textDark }]}>Settings</Text>
                 </View>
               </View>
             </TouchableOpacity>

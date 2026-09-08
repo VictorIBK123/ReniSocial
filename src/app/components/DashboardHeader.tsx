@@ -1,42 +1,62 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constant';
 import { Text } from './UI';
 import { useAuthStore } from '../../store/authStore';
+import ProfileDropdown from './dashboard/ProfileDropdown';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function DashboardHeader() {
   const { user } = useAuthStore();
+  const { colors, isDark, setThemePreference } = useTheme();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   return (
     <View style={styles.header}>
       <View style={styles.headerLeft}>
-        <View style={styles.logoIcon}>
+        <View style={[styles.logoIcon, { backgroundColor: colors.brandPrimary }]}>
           <Feather name="send" size={16} color={Colors.white} />
         </View>
-        <TouchableOpacity style={styles.workspaceSelector}>
-          <View style={styles.workspaceAvatar}>
+        <TouchableOpacity style={[styles.workspaceSelector, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}>
+          <View style={[styles.workspaceAvatar, { backgroundColor: colors.brandPrimary }]}>
             <Text variant="caption" color="white" style={{ fontSize: 10 }}>AA</Text>
           </View>
-          <Text variant="bodyBold" style={styles.workspaceName} numberOfLines={1} ellipsizeMode="tail">Acme Corp Global</Text>
-          <Feather name="chevron-down" size={16} color={Colors.textDark} />
+          <Text variant="bodyBold" style={[styles.workspaceName, { color: colors.textDark }]} numberOfLines={1} ellipsizeMode="tail">Acme Corp Global</Text>
+          <Feather name="chevron-down" size={16} color={colors.textDark} />
         </TouchableOpacity>
       </View>
       <View style={styles.headerRight}>
-        <TouchableOpacity style={styles.headerIcon}>
-          <Feather name="bell" size={18} color={Colors.textDark} />
+        <TouchableOpacity style={[styles.headerIcon, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}>
+          <Feather name="bell" size={18} color={colors.textDark} />
           <View style={styles.notificationDot} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerIcon}>
-          <Feather name="moon" size={18} color={Colors.textDark} />
+        <TouchableOpacity
+          style={[styles.headerIcon, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}
+          onPress={() => setThemePreference(isDark ? 'light' : 'dark')}
+          activeOpacity={0.7}
+        >
+          <Feather name={isDark ? "sun" : "moon"} size={18} color={colors.textDark} />
         </TouchableOpacity>
-        <View style={styles.profileAvatar}>
-          {/* Fallback to initials if no photo */}
-          <Text variant="caption" color="white" style={{ fontSize: 12 }}>
-            {user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || ''}
-          </Text>
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => setIsProfileMenuOpen(true)}
+          style={[styles.profileAvatarWrapper, { borderColor: colors.borderLight }]}
+        >
+          <Image
+            source={{
+              uri: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
+            }}
+            style={styles.profileAvatarImg}
+          />
+        </TouchableOpacity>
       </View>
+
+      {/* Switcher Pill / Profile Dropdown Menu */}
+      <ProfileDropdown
+        visible={isProfileMenuOpen}
+        onClose={() => setIsProfileMenuOpen(false)}
+      />
     </View>
   );
 }
@@ -112,12 +132,16 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#EF4444',
   },
-  profileAvatar: {
+  profileAvatarWrapper: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.textDark,
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  profileAvatarImg: {
+    width: '100%',
+    height: '100%',
   },
 });

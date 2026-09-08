@@ -7,6 +7,7 @@ import DashboardHeader from '../components/DashboardHeader';
 import Icon from '../components/IconResolver';
 import { Text, View, Card, Badge } from '../components/UI';
 import { useComposerStore } from '../../store/composerStore';
+import { useTheme } from '../../hooks/useTheme';
 
 const DAYS = [
     { day: 'MO', date: '17' },
@@ -21,9 +22,10 @@ const DAYS = [
 export default function CalendarScreen() {
     const [activeView, setActiveView] = useState<'Day' | 'Week' | 'Month'>('Day');
     const { openComposer } = useComposerStore();
+    const { colors } = useTheme();
 
     return (
-        <SafeAreaView edges={['top']} style={styles.container}>
+        <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.bgApp }]}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <DashboardHeader />
 

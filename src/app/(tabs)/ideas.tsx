@@ -7,12 +7,14 @@ import { Text, View, Card, Badge, Button } from '../components/UI';
 import DashboardHeader from '../components/DashboardHeader';
 import { Icon } from '../components/IconResolver';
 import { useComposerStore } from '../../store/composerStore';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function IdeasScreen() {
     const { openComposer } = useComposerStore();
+    const { colors } = useTheme();
 
     return (
-        <SafeAreaView edges={['top']} style={styles.container}>
+        <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.bgApp }]}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <DashboardHeader />
 

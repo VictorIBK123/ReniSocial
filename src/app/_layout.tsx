@@ -26,8 +26,8 @@ import {
 
 import { useAuthStore } from '../store/authStore';
 
-// Keep the native splash screen visible until fonts are loaded
-SplashScreen.preventAutoHideAsync();
+// Keep the native splash screen visible until fonts and auth status are loaded
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -47,13 +47,16 @@ export default function RootLayout() {
     SpaceGrotesk_700Bold,
   });
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+  const isReady = (fontsLoaded || fontError) && isHydrated;
 
-  if (!fontsLoaded && !fontError) {
+  useEffect(() => {
+    if (isReady) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isReady]);
+
+  if (!isReady) {
     // Return null — the native splash screen stays visible
     return null;
   }
@@ -67,14 +70,22 @@ function RootLayoutNav() {
   const router = useRouter();
 
   useEffect(() => {
-    const inAuthGroup = segments[0] === '(auth)' || (segments as string[]).length === 0 || (segments as string[])[0] === 'index';
-    
+    const inTabsGroup = segments[0] === '(tabs)';
+    const inAuthGroup =
+      segments[0] === '(auth)' ||
+      segments.length === 0 ||
+      (segments as string[])[0] === 'index';
+
     if (isAuthenticated) {
-      router.replace('/(tabs)/dashboard');
-    } else if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/');
+      if (!inTabsGroup) {
+        router.replace('/(tabs)/dashboard');
+      }
+    } else {
+      if (!inAuthGroup) {
+        router.replace('/');
+      }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, segments]);
 
   return (
     <SafeAreaProvider>

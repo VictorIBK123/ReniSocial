@@ -8,31 +8,33 @@ import { useAuthStore } from '../../store/authStore';
 import { Text, View, Card, Badge } from '../components/UI';
 import Icon from '../components/IconResolver';
 import DashboardHeader from '../components/DashboardHeader';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<'This Week' | 'This Month'>('This Week');
 
   // Dummy Data for charts
   const barData = [
-    { value: 20, label: 'Mon', frontColor: Colors.borderLight },
-    { value: 30, label: 'Tue', frontColor: Colors.borderLight },
-    { value: 45, label: 'Wed', frontColor: Colors.borderLight },
-    { value: 60, label: 'Thu', frontColor: Colors.borderLight },
-    { value: 90, label: 'Fri', frontColor: Colors.brandPrimary },
-    { value: 30, label: 'Sat', frontColor: Colors.borderLight },
-    { value: 25, label: 'Sun', frontColor: Colors.borderLight },
+    { value: 20, label: 'Mon', frontColor: colors.borderLight },
+    { value: 30, label: 'Tue', frontColor: colors.borderLight },
+    { value: 45, label: 'Wed', frontColor: colors.borderLight },
+    { value: 60, label: 'Thu', frontColor: colors.borderLight },
+    { value: 90, label: 'Fri', frontColor: colors.brandPrimary },
+    { value: 30, label: 'Sat', frontColor: colors.borderLight },
+    { value: 25, label: 'Sun', frontColor: colors.borderLight },
   ];
 
   const pieData = [
     { value: 45, color: '#0A66C2', text: '45%' }, // LinkedIn
     { value: 35, color: '#E1306C', text: '35%' }, // Instagram
-    { value: 20, color: '#000000', text: '20%' }, // X (Twitter)
+    { value: 20, color: colors.textDark, text: '20%' }, // X (Twitter)
   ];
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.bgApp }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
         {/* Header */}

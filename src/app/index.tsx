@@ -2,8 +2,9 @@ import React, { useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { Colors } from '../constant';
+import { useAuthStore } from '../store/authStore';
 import OnboardingSlide1 from './components/slides/OnboardingSlide1';
 import OnboardingSlide2 from './components/slides/OnboardingSlide2';
 import OnboardingSlide3 from './components/slides/OnboardingSlide3';
@@ -12,8 +13,13 @@ import OnboardingSlide5 from './components/slides/OnboardingSlide5';
 
 export default function Index() {
   const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
   const pagerRef = useRef<PagerView>(null);
   const [currentPage, setCurrentPage] = useState<number>(0);
+
+  if (isAuthenticated) {
+    return <Redirect href="/(tabs)/dashboard" />;
+  }
 
   const isDarkSlide = currentPage === 0 || currentPage === 2 || currentPage === 4;
 

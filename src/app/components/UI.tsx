@@ -20,41 +20,42 @@ import {
 } from 'react-native';
 import { Colors, Fonts } from '../../constant';
 import Icon from './IconResolver';
+import { useTheme } from '../../hooks/useTheme';
 
 /* ==========================================================================
    Re-export Colors for backward compat
    ========================================================================== */
 
 export const colors = {
-  brandPrimary: Colors.brandPrimary,
-  brandDark: Colors.brandDark,
-  brandNavy: Colors.brandNavy,
-  bgLight: Colors.bgLight,
-  bgCardSubtle: Colors.bgCardSubtle,
-  bgCardActive: Colors.white,
-  bgDark: Colors.brandPrimary,
-  glassBg: Colors.glass08,
-  glassBgSubtle: Colors.glass06,
-  glassBorder: Colors.glass15,
-  glassBorderSubtle: Colors.glass08,
-  glassTagBg: Colors.glass14,
-  textDark: Colors.textDark,
-  textLight: Colors.white,
-  textMuted: Colors.textMuted,
-  textMutedDark: Colors.glass65,
-  textMutedLight: Colors.glass85,
-  borderLight: Colors.borderLight,
-  borderSubtle: Colors.borderSubtle,
-  success: Colors.success,
-  successBg: Colors.successBg,
-  danger: Colors.danger,
-  dangerBg: Colors.dangerBg,
-  info: Colors.info,
-  infoBg: Colors.infoBg,
-  warning: Colors.warning,
-  warningBg: Colors.warningBg,
-  purple: Colors.purple,
-  purpleBg: Colors.purpleBg,
+  brandPrimary: Colors.light.brandPrimary,
+  brandDark: Colors.light.brandDark,
+  brandNavy: Colors.light.brandNavy,
+  bgLight: Colors.light.bgLight,
+  bgCardSubtle: Colors.light.bgCardSubtle,
+  bgCardActive: Colors.light.white,
+  bgDark: Colors.light.brandPrimary,
+  glassBg: Colors.light.glass08,
+  glassBgSubtle: Colors.light.glass06,
+  glassBorder: Colors.light.glass15,
+  glassBorderSubtle: Colors.light.glass08,
+  glassTagBg: Colors.light.glass14,
+  textDark: Colors.light.textDark,
+  textLight: Colors.light.white,
+  textMuted: Colors.light.textMuted,
+  textMutedDark: Colors.light.glass65,
+  textMutedLight: Colors.light.glass85,
+  borderLight: Colors.light.borderLight,
+  borderSubtle: Colors.light.borderSubtle,
+  success: Colors.light.success,
+  successBg: Colors.light.successBg,
+  danger: Colors.light.danger,
+  dangerBg: Colors.light.dangerBg,
+  info: Colors.light.info,
+  infoBg: Colors.light.infoBg,
+  warning: Colors.light.warning,
+  warningBg: Colors.light.warningBg,
+  purple: Colors.light.purple,
+  purpleBg: Colors.light.purpleBg,
 };
 
 /* ==========================================================================
@@ -103,12 +104,26 @@ export const Text: React.FC<TextProps> = ({
   children,
   ...props
 }) => {
+  const { colors: themeColors } = useTheme();
   const variantStyle = textVariantStyles[variant];
 
-  // Resolve color
+  // Resolve color dynamically based on active theme
   let resolvedColor = color;
-  if (color && textColorMap[color as TextColor]) {
-    resolvedColor = textColorMap[color as TextColor];
+  if (color) {
+    if (color === 'primary') resolvedColor = themeColors.brandPrimary;
+    else if (color === 'dark') resolvedColor = themeColors.textDark;
+    else if (color === 'light') resolvedColor = themeColors.textLight;
+    else if (color === 'white') resolvedColor = '#FFFFFF';
+    else if (color === 'muted') resolvedColor = themeColors.textMuted;
+    else if (color === 'mutedDark') resolvedColor = themeColors.textMutedDarker;
+    else if (color === 'success') resolvedColor = themeColors.success;
+    else if (color === 'danger') resolvedColor = themeColors.danger;
+  } else {
+    if (variant === 'subheading' || variant === 'eyebrow' || variant === 'caption') {
+      resolvedColor = themeColors.textMuted;
+    } else {
+      resolvedColor = themeColors.textDark;
+    }
   }
 
   // Resolve font weight → fontFamily
@@ -130,17 +145,6 @@ export const Text: React.FC<TextProps> = ({
       {children}
     </RNText>
   );
-};
-
-const textColorMap: Record<TextColor, string> = {
-  primary: colors.brandPrimary,
-  dark: colors.textDark,
-  light: colors.textLight,
-  white: Colors.white,
-  muted: colors.textMuted,
-  mutedDark: colors.textMutedDark,
-  success: colors.success,
-  danger: colors.danger,
 };
 
 /** Maps the `weight` prop to a specific fontFamily (body family by default) */
@@ -336,11 +340,34 @@ export const Card: React.FC<CardProps> = ({
   children,
   ...props
 }) => {
+  const { colors: themeColors } = useTheme();
+
+  const dynamicCardStyle: ViewStyle = {
+    ...(variant === 'solid' && {
+      backgroundColor: themeColors.bgCard,
+      borderColor: themeColors.borderLight,
+    }),
+    ...(variant === 'subtle' && {
+      backgroundColor: themeColors.bgCardSubtle,
+      borderColor: themeColors.borderLight,
+    }),
+    ...(variant === 'outline' && {
+      borderColor: themeColors.borderLight,
+    }),
+    ...(variant === 'post' && {
+      backgroundColor: themeColors.bgCard,
+      borderColor: themeColors.borderLight,
+    }),
+    ...(variant === 'interactive' && {
+      backgroundColor: active ? themeColors.bgCard : themeColors.glass08,
+      borderColor: active ? themeColors.borderLight : themeColors.glass15,
+    }),
+  };
+
   const cardStyle = [
     cardVariantStyles.base,
     cardVariantStyles[variant],
-    variant === 'interactive' &&
-    (active ? cardVariantStyles.interactiveActive : cardVariantStyles.interactiveInactive),
+    dynamicCardStyle,
     style,
   ];
 
@@ -673,10 +700,28 @@ export const Badge: React.FC<BadgeProps> = ({
   children,
   ...props
 }) => {
+  const { colors: themeColors } = useTheme();
+
+  const dynamicBadgeBg: ViewStyle = {
+    ...(variant === 'success' && { backgroundColor: themeColors.successBg }),
+    ...(variant === 'danger' && { backgroundColor: themeColors.dangerBg }),
+    ...(variant === 'info' && { backgroundColor: themeColors.infoBg }),
+    ...(variant === 'warning' && { backgroundColor: themeColors.warningBg }),
+    ...(variant === 'subtle' && { backgroundColor: themeColors.bgAccent }),
+  };
+
+  const dynamicBadgeTextColor: TextStyle = {
+    ...(variant === 'success' && { color: themeColors.success }),
+    ...(variant === 'danger' && { color: themeColors.danger }),
+    ...(variant === 'info' && { color: themeColors.info }),
+    ...(variant === 'warning' && { color: themeColors.warning }),
+    ...(variant === 'subtle' && { color: themeColors.brandPrimary }),
+  };
+
   return (
-    <RNView style={[badgeVariantStyles.base, badgeVariantStyles[variant], style]} {...props}>
+    <RNView style={[badgeVariantStyles.base, badgeVariantStyles[variant], dynamicBadgeBg, style]} {...props}>
       {label ? (
-        <RNText style={[badgeTextStyles.base, badgeTextStyles[variant], textStyle]}>
+        <RNText style={[badgeTextStyles.base, badgeTextStyles[variant], dynamicBadgeTextColor, textStyle]}>
           {label}
         </RNText>
       ) : (
@@ -773,6 +818,7 @@ export const Input: React.FC<InputProps> = ({
   onBlur,
   ...props
 }) => {
+  const { colors: themeColors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -783,7 +829,7 @@ export const Input: React.FC<InputProps> = ({
   return (
     <RNView style={[inputStyles.wrapper, containerStyle, style]}>
       {label ? (
-        <RNText style={[inputStyles.label, !!error && inputStyles.labelError]}>
+        <RNText style={[inputStyles.label, { color: themeColors.textDark }, !!error && inputStyles.labelError]}>
           {label}
         </RNText>
       ) : null}
@@ -791,6 +837,10 @@ export const Input: React.FC<InputProps> = ({
       <RNView
         style={[
           inputStyles.inputBox,
+          {
+            backgroundColor: themeColors.bgCard,
+            borderColor: isFocused ? themeColors.brandPrimary : themeColors.borderLight,
+          },
           isFocused && inputStyles.inputBoxFocused,
           !!error && inputStyles.inputBoxError,
         ]}
@@ -800,13 +850,13 @@ export const Input: React.FC<InputProps> = ({
             <Feather
               name={resolvedLeftIcon}
               size={18}
-              color={error ? Colors.danger : isFocused ? Colors.brandPrimary : Colors.textMuted}
+              color={error ? themeColors.danger : isFocused ? themeColors.brandPrimary : themeColors.textMuted}
             />
           </RNView>
         ) : null}
 
         <TextInput
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={themeColors.textPlaceholder}
           secureTextEntry={isPassword && !showPassword}
           onFocus={(e) => {
             setIsFocused(true);
@@ -818,6 +868,7 @@ export const Input: React.FC<InputProps> = ({
           }}
           style={[
             inputStyles.textInput,
+            { color: themeColors.textDark },
             resolvedLeftIcon ? { paddingLeft: 6 } : undefined,
             resolvedRightIcon ? { paddingRight: 6 } : undefined,
             inputStyle,
@@ -835,7 +886,7 @@ export const Input: React.FC<InputProps> = ({
             <Feather
               name={resolvedRightIcon}
               size={18}
-              color={Colors.textMuted}
+              color={themeColors.textMuted}
             />
           </TouchableOpacity>
         ) : null}

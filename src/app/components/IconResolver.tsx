@@ -36,6 +36,21 @@ import PendingIcon from '../../../assets/svgs/pending.svg';
 import GalleryIcon from '../../../assets/svgs/gallery.svg';
 import DraftIcon from '../../../assets/svgs/draft.svg';
 import SendIcon from '../../../assets/svgs/send.svg';
+import Pinterest2Icon from '../../../assets/svgs/pinterest-2.svg';
+import CommentIcon from '../../../assets/svgs/comment.svg';
+import RepostIcon from '../../../assets/svgs/repost.svg';
+import ReachIcon from '../../../assets/svgs/reach.svg';
+import LikeIcon from '../../../assets/svgs/like.svg';
+import CommentLinkedinIcon from '../../../assets/svgs/comment-linkedin.svg';
+import RepostLinkedinIcon from '../../../assets/svgs/repost-linkedin.svg';
+import SendLinkedinIcon from '../../../assets/svgs/send-linkedin.svg';
+import SendIgIcon from '../../../assets/svgs/send-ig.svg';
+import VerifiedIcon from '../../../assets/svgs/verified.svg';
+import GlobalIcon from '../../../assets/svgs/global.svg';
+import LinkIcon from '../../../assets/svgs/link.svg';
+import ScheduleIcon from '../../../assets/svgs/schedule.svg';
+import SystemThemeIcon from '../../../assets/svgs/system-theme.svg';
+import ViewsIcon from '../../../assets/svgs/views.svg';
 
 const svgMap = {
   instagram: InstagramIcon,
@@ -45,6 +60,7 @@ const svgMap = {
   google: GoogleIcon,
   linkedin: LinkedInIcon,
   pinterest: PinterestIcon,
+  'pinterest-2': Pinterest2Icon,
   info: InfoIcon,
   'calendar-dashboard': CalendarDashboardIcon,
   'instagram-gradient': InstagramGradientIcon,
@@ -72,6 +88,20 @@ const svgMap = {
   gallery: GalleryIcon,
   draft: DraftIcon,
   send: SendIcon,
+  comment: CommentIcon,
+  repost: RepostIcon,
+  reach: ReachIcon,
+  like: LikeIcon,
+  'comment-linkedin': CommentLinkedinIcon,
+  'repost-linkedin': RepostLinkedinIcon,
+  'send-linkedin': SendLinkedinIcon,
+  'send-ig': SendIgIcon,
+  verified: VerifiedIcon,
+  global: GlobalIcon,
+  link: LinkIcon,
+  schedule: ScheduleIcon,
+  'system-theme': SystemThemeIcon,
+  views: ViewsIcon,
 };
 
 export type IconName = keyof typeof svgMap;
