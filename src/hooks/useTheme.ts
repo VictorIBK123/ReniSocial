@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { useColorScheme, ColorSchemeName } from 'react-native';
 import { Colors, ThemeColors, ThemePreference } from '../constant';
 import { useThemeStore } from '../store/themeStore';
 
@@ -8,7 +8,7 @@ export interface UseThemeReturn {
   setThemePreference: (theme: ThemePreference) => void;
   isDark: boolean;
   activeTheme: 'light' | 'dark';
-  systemColorScheme: 'light' | 'dark' | null | undefined;
+  systemColorScheme: ColorSchemeName;
 }
 
 export const useTheme = (): UseThemeReturn => {

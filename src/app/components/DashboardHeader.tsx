@@ -3,14 +3,27 @@ import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constant';
 import { Text } from './UI';
-import { useAuthStore } from '../../store/authStore';
-import ProfileDropdown from './dashboard/ProfileDropdown';
+import { useAuth } from '../../store/authStore';
+import { useWorkspace } from '../../hooks/useWorkspace';
+import ProfileDropdown from './ProfileDropdown';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function DashboardHeader() {
-  const { user } = useAuthStore();
+  const { user } = useAuth();
+  const { currentWorkspace } = useWorkspace();
   const { colors, isDark, setThemePreference } = useTheme();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+
+  const workspaceName = currentWorkspace?.name || 'Workspace';
+  const workspaceInitials = currentWorkspace?.name
+    ? currentWorkspace.name
+        .split(' ')
+        .filter(Boolean)
+        .map((w) => w[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : 'WS';
 
   return (
     <View style={styles.header}>
@@ -19,10 +32,14 @@ export default function DashboardHeader() {
           <Feather name="send" size={16} color={Colors.white} />
         </View>
         <TouchableOpacity style={[styles.workspaceSelector, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}>
-          <View style={[styles.workspaceAvatar, { backgroundColor: colors.brandPrimary }]}>
-            <Text variant="caption" color="white" style={{ fontSize: 10 }}>AA</Text>
-          </View>
-          <Text variant="bodyBold" style={[styles.workspaceName, { color: colors.textDark }]} numberOfLines={1} ellipsizeMode="tail">Acme Corp Global</Text>
+          {currentWorkspace?.logo_url ? (
+            <Image source={{ uri: currentWorkspace.logo_url }} style={styles.workspaceAvatar} />
+          ) : (
+            <View style={[styles.workspaceAvatar, { backgroundColor: colors.brandPrimary }]}>
+              <Text variant="caption" color="white" style={{ fontSize: 10 }}>{workspaceInitials}</Text>
+            </View>
+          )}
+          <Text variant="bodyBold" style={[styles.workspaceName, { color: colors.textDark }]} numberOfLines={1} ellipsizeMode="tail">{workspaceName}</Text>
           <Feather name="chevron-down" size={16} color={colors.textDark} />
         </TouchableOpacity>
       </View>
@@ -43,12 +60,16 @@ export default function DashboardHeader() {
           onPress={() => setIsProfileMenuOpen(true)}
           style={[styles.profileAvatarWrapper, { borderColor: colors.borderLight }]}
         >
-          <Image
-            source={{
-              uri: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
-            }}
-            style={styles.profileAvatarImg}
-          />
+          {user?.photoUrl ? (
+            <Image
+              source={{ uri: user.photoUrl }}
+              style={styles.profileAvatarImg}
+            />
+          ) : (
+            <View style={[styles.profileAvatarImg, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgAccent }]}>
+              <Feather name="user" size={18} color={colors.brandPrimary} />
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 

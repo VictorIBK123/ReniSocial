@@ -1,2 +1,2 @@
-export { default as ProfileDropdown } from './ProfileDropdown';
-export * from './ProfileDropdown';
+export { default as ProfileDropdown } from '../ProfileDropdown';
+export * from '../ProfileDropdown';

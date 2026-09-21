@@ -24,7 +24,9 @@ import {
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
 
-import { useAuthStore } from '../store/authStore';
+import { useAuth } from '../store/authStore';
+import QueryProvider from '../store/QueryProvider';
+import { useUserProfileQuery } from '../hooks/useUserProfile';
 
 // Keep the native splash screen visible until fonts and auth status are loaded
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -47,7 +49,7 @@ export default function RootLayout() {
     SpaceGrotesk_700Bold,
   });
 
-  const isHydrated = useAuthStore((state) => state.isHydrated);
+  const isHydrated = useAuth((state) => state.isHydrated);
   const isReady = (fontsLoaded || fontError) && isHydrated;
 
   useEffect(() => {
@@ -61,23 +63,35 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <QueryProvider>
+      <RootLayoutNav />
+    </QueryProvider>
+  );
 }
 
 function RootLayoutNav() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
+  // TanStack Query auto-fetches profile when authenticated
+  // and persists the cache to AsyncStorage
+  useUserProfileQuery();
+
   useEffect(() => {
     const inTabsGroup = segments[0] === '(tabs)';
+    const currentSubRoute = segments[1] as string | undefined;
+    const isPostAuthOnboarding =
+      segments[0] === '(auth)' &&
+      (currentSubRoute === 'welcome-success' || currentSubRoute === 'connect-socials');
     const inAuthGroup =
       segments[0] === '(auth)' ||
-      segments.length === 0 ||
+      (segments as string[]).length === 0 ||
       (segments as string[])[0] === 'index';
 
     if (isAuthenticated) {
-      if (!inTabsGroup) {
+      if (!inTabsGroup && !isPostAuthOnboarding) {
         router.replace('/(tabs)/dashboard');
       }
     } else {

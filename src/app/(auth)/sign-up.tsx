@@ -20,7 +20,7 @@ import {
   Text,
   View,
 } from '../components/UI';
-import { registerEmail } from '../../services/auth';
+import { registerEmail } from '../../services/auth.service';
 
 export default function SignUpScreen() {
   const router = useRouter();

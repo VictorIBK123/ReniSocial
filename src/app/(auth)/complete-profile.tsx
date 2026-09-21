@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constant';
-import { completeRegistration } from '../../services/auth';
+import { completeRegistration } from '../../services/auth.service';
 import { validatePassword } from '../../utils/test-password';
-import { useAuthStore } from '../../store/authStore';
+import { useAuth, normalizeUser } from '../../store/authStore';
 import Icon from '../components/IconResolver';
 import {
   Badge,
@@ -26,7 +26,7 @@ export default function CompleteProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { email } = useLocalSearchParams<{ email?: string }>();
-  const { setUser } = useAuthStore();
+  const { setUser } = useAuth();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -81,22 +81,10 @@ export default function CompleteProfileScreen() {
       });
       setLoading(false);
       
-      if (response.status === true) {
-        const userData = Array.isArray(response.data) ? response.data[0] : response.data;
-        if (userData) {
-          setUser({
-            email: userData.mail,
-            username: userData.username,
-            token: userData.token || userData.usertoken,
-            firstName: userData.fname,
-            lastName: userData.lname,
-            fullName: userData.fullname,
-            gender: userData.gender,
-            phone: userData.phone,
-          });
-        }
-        // routing is handled automatically now
-        // router.push('/welcome-success' as any);
+      if (response.status === true && response.data) {
+        const user = normalizeUser(response.data);
+        setUser(user);
+        router.replace('/(auth)/welcome-success');
       } else {
         setErrors({ general: response.message || 'Failed to complete registration' });
       }

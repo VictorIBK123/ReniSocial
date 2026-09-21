@@ -17,7 +17,7 @@ import {
   Text,
   View,
 } from '../components/UI';
-import { activateEmail } from '../../services/auth';
+import { activateEmail } from '../../services/auth.service';
 
 export default function VerifyOtpScreen() {
   const router = useRouter();

@@ -16,10 +16,10 @@ import Animated, {
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Fonts } from '../../../constant';
-import { Text } from '../UI';
-import { useAuthStore } from '../../../store/authStore';
-import { useTheme } from '../../../hooks/useTheme';
+import { Colors, Fonts } from '../../constant';
+import { Text } from './UI';
+import { useAuth } from '../../store/authStore';
+import { useTheme } from '../../hooks/useTheme';
 
 interface ProfileDropdownProps {
   visible: boolean;
@@ -28,7 +28,7 @@ interface ProfileDropdownProps {
 
 export default function ProfileDropdown({ visible, onClose }: ProfileDropdownProps) {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -64,7 +64,7 @@ export default function ProfileDropdown({ visible, onClose }: ProfileDropdownPro
 
   const handleProfile = () => {
     onClose();
-    router.push('/(tabs)/workspace');
+    router.push({ pathname: '/(tabs)/settings', params: { tab: 'Profile & Security' } });
   };
 
   const handleSignOut = () => {
@@ -101,12 +101,16 @@ export default function ProfileDropdown({ visible, onClose }: ProfileDropdownPro
                 activeOpacity={0.7}
                 onPress={handleProfile}
               >
-                <Image
-                  source={{
-                    uri: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
-                  }}
-                  style={styles.userAvatar}
-                />
+                {user?.photoUrl ? (
+                  <Image
+                    source={{ uri: user.photoUrl }}
+                    style={styles.userAvatar}
+                  />
+                ) : (
+                  <View style={[styles.userAvatar, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgAccent }]}>
+                    <Feather name="user" size={16} color={colors.brandPrimary} />
+                  </View>
+                )}
                 <View style={styles.userInfo}>
                   <Text style={[styles.userName, { color: colors.textDark }]} numberOfLines={1}>
                     {displayName}

@@ -19,14 +19,14 @@ import {
   Text,
   View,
 } from '../components/UI';
-import { login } from '../../services/auth';
+import { login } from '../../services/auth.service';
 import { validatePassword } from '../../utils/test-password';
-import { useAuthStore } from '../../store/authStore';
+import { useAuth, normalizeUser } from '../../store/authStore';
 
 export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { setUser } = useAuthStore();
+  const { setUser } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,8 +35,13 @@ export default function SignInScreen() {
   const [error, setError] = useState('');
 
   const handleSignIn = async () => {
-    if (!email) {
+    if (!email.trim()) {
       setError('Please enter your email address');
+      return;
+    }
+    
+    if (!password) {
+      setError('Please enter your password');
       return;
     }
     
@@ -53,19 +58,10 @@ export default function SignInScreen() {
       const response = await login(email, password);
       setLoading(false);
       
-      if (response.status === true) {
-        setUser({
-          email: response.data.mail,
-          username: response.data.username,
-          token: response.data.token,
-          firstName: response.data.fname,
-          lastName: response.data.lname,
-          fullName: response.data.fullname,
-          gender: response.data.gender,
-          phone: response.data.phone,
-        });
-        // We do not need to route manually if _layout automatically redirects based on authState
-        // router.push('/welcome-success' as any);
+      if (response.status === true && response.data) {
+        const user = normalizeUser(response.data);
+        setUser(user);
+        router.replace('/(tabs)/dashboard');
       } else {
         setError(response.message || 'Failed to sign in');
       }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, FlatList, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, Card, Badge, Button } from '../components/UI';
 import { Colors, Fonts } from '../../constant';
@@ -9,6 +9,8 @@ import DashboardHeader from '../components/DashboardHeader';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 import InviteMemberModal, { TeamRole } from '../components/workspace/InviteMemberModal';
+import { useWorkspace, useCreateWorkspaceMutation } from '../../hooks/useWorkspace';
+import ActivityModal, { ActivityModalType } from '../components/ActivityModal';
 
 interface Member {
     id: string;
@@ -66,12 +68,103 @@ const PENDING_INVITES = [
 
 export default function WorkspaceScreen() {
     const router = useRouter();
+    const { currentWorkspace } = useWorkspace();
+    const createWorkspaceMutation = useCreateWorkspaceMutation();
+
     const [activeTab, setActiveTab] = useState<'Workspace Details' | 'Team Members'>('Workspace Details');
-    const [brandName, setBrandName] = useState('Acme Corp Global');
-    const [description, setDescription] = useState('');
+    const [brandName, setBrandName] = useState(currentWorkspace?.name || '');
+    const [description, setDescription] = useState(currentWorkspace?.description || '');
+    const [logoUrl, setLogoUrl] = useState(currentWorkspace?.logo_url || '');
+    const [planType, setPlanType] = useState(currentWorkspace?.type || 'Personal');
     const [searchQuery, setSearchQuery] = useState('');
     const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
     const [pendingInvites, setPendingInvites] = useState<{ id: string; email: string; role: TeamRole }[]>(PENDING_INVITES as { id: string; email: string; role: TeamRole }[]);
+
+    // Activity modal state (supports confirmation with Yes/No toggle, success, error, info)
+    const [activityModal, setActivityModal] = useState<{
+        visible: boolean;
+        type: ActivityModalType;
+        title: string;
+        message?: string;
+        confirmText?: string;
+        cancelText?: string;
+        onConfirm?: () => void;
+        onCancel?: () => void;
+    }>({
+        visible: false,
+        type: 'info',
+        title: '',
+        message: '',
+    });
+
+    useEffect(() => {
+        if (currentWorkspace) {
+            setBrandName(currentWorkspace.name || '');
+            setDescription(currentWorkspace.description || '');
+            setLogoUrl(currentWorkspace.logo_url || '');
+            setPlanType(currentWorkspace.type || 'Personal');
+        }
+    }, [currentWorkspace]);
+
+    const executeWorkspaceCreation = () => {
+        createWorkspaceMutation.mutate(
+            {
+                name: brandName.trim(),
+                description: description.trim(),
+                logo_url: logoUrl.trim(),
+                type: (planType || 'Personal').toLowerCase(),
+            },
+            {
+                onSuccess: (data) => {
+                    setActivityModal({
+                        visible: true,
+                        type: 'success',
+                        title: 'Workspace Created!',
+                        message:
+                            data.message ||
+                            `Workspace "${data.data?.name || brandName}" has been successfully created.`,
+                        confirmText: 'Continue',
+                        onConfirm: () => {
+                            setActivityModal((prev) => ({ ...prev, visible: false }));
+                        },
+                    });
+                },
+                onError: (error: any) => {
+                    const errorMsg =
+                        error?.response?.data?.message ||
+                        error?.message ||
+                        'Failed to create workspace. Please check your network and try again.';
+                    setActivityModal({
+                        visible: true,
+                        type: 'error',
+                        title: 'Creation Failed',
+                        message: errorMsg,
+                        confirmText: 'Dismiss',
+                        onConfirm: () => {
+                            setActivityModal((prev) => ({ ...prev, visible: false }));
+                        },
+                    });
+                },
+            }
+        );
+    };
+
+    const handleSaveWorkspace = () => {
+        if (!brandName.trim()) {
+            setActivityModal({
+                visible: true,
+                type: 'error',
+                title: 'Validation Error',
+                message: 'Please enter a brand name for your workspace.',
+                confirmText: 'Got It',
+                onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+            });
+            return;
+        }
+
+        // Directly create workspace without pre-confirmation modal
+        executeWorkspaceCreation();
+    };
 
     const handleSendInvite = (email: string, role: TeamRole) => {
         const newInvite = {
@@ -194,19 +287,38 @@ export default function WorkspaceScreen() {
                                 BRAND LOGO
                             </Text>
 
-                            {/* Upload Area */}
-                            <TouchableOpacity activeOpacity={0.7} style={styles.uploadBox}>
-                                <Icon name="upload" size={24} color="#475569" />
-                                <Text style={styles.uploadText}>UPLOAD</Text>
-                            </TouchableOpacity>
+                            {logoUrl ? (
+                                <View style={styles.logoPreviewContainer}>
+                                    <Image source={{ uri: logoUrl }} style={styles.logoPreviewImage} />
+                                    <TouchableOpacity
+                                        activeOpacity={0.7}
+                                        onPress={() => setLogoUrl('')}
+                                        style={[styles.removeLogoButton, { borderColor: colors.borderLight }]}
+                                    >
+                                        <Feather name="trash-2" size={15} color={Colors.danger} />
+                                        <Text style={{ fontSize: 12, color: Colors.danger, marginLeft: 4 }}>Remove Logo</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <View style={styles.uploadBox}>
+                                    <Icon name="upload" size={24} color="#475569" />
+                                    <Text style={styles.uploadText}>NO LOGO SET</Text>
+                                </View>
+                            )}
 
                             <Text variant="body" color="dark" style={styles.logoHint}>
-                                Personalize your workspace with a brand logo. Recommended: 512x512px (PNG, JPG)
+                                Enter a direct image URL for your workspace logo (e.g. PNG, JPG).
                             </Text>
 
-                            <TouchableOpacity activeOpacity={0.7} style={styles.chooseFileButton}>
-                                <Text variant="bodyBold" style={styles.chooseFileText}>Choose File</Text>
-                            </TouchableOpacity>
+                            <TextInput
+                                style={[styles.textInput, { backgroundColor: colors.bgCard, color: colors.textDark, borderColor: colors.borderLight }]}
+                                value={logoUrl}
+                                onChangeText={setLogoUrl}
+                                placeholder="https://example.com/logo.png"
+                                placeholderTextColor="#94A3B8"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
                         </Card>
 
                         {/* Brand Name & Description Card */}
@@ -215,7 +327,7 @@ export default function WorkspaceScreen() {
                                 BRAND NAME
                             </Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, { backgroundColor: colors.bgCard, color: colors.textDark, borderColor: colors.borderLight }]}
                                 value={brandName}
                                 onChangeText={setBrandName}
                                 placeholder="Brand name"
@@ -226,7 +338,7 @@ export default function WorkspaceScreen() {
                                 DESCRIPTION
                             </Text>
                             <TextInput
-                                style={styles.textAreaInput}
+                                style={[styles.textAreaInput, { backgroundColor: colors.bgCard, color: colors.textDark, borderColor: colors.borderLight }]}
                                 value={description}
                                 onChangeText={setDescription}
                                 placeholder="Tell us a bit about what your brand does"
@@ -239,18 +351,51 @@ export default function WorkspaceScreen() {
 
                         {/* Plan Type Card */}
                         <Card>
-                            <Text variant="caption" weight="bold" style={styles.cardLabelText}>
-                                PLAN TYPE
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                                <Text variant="caption" weight="bold" style={[styles.cardLabelText, { marginBottom: 0 }]}>
+                                    PLAN TYPE
+                                </Text>
+                                <TouchableOpacity
+                                    activeOpacity={0.7}
+                                    onPress={() =>
+                                        setActivityModal({
+                                            visible: true,
+                                            type: 'info',
+                                            title: 'Plan Information',
+                                            message: 'The Personal plan gives you full access to post composition, scheduling, multi-channel connections, and engagement analytics.',
+                                            confirmText: 'Understood',
+                                            onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+                                        })
+                                    }
+                                    style={{ padding: 4 }}
+                                >
+                                    <Feather name="info" size={16} color={colors.brandPrimary} />
+                                </TouchableOpacity>
+                            </View>
                             <View style={styles.planPill}>
                                 <View style={styles.planDot} />
                                 <Text variant="body" color="dark" style={styles.planText}>Personal</Text>
                             </View>
                         </Card>
 
-                        {/* Save Changes Action */}
-                        <TouchableOpacity activeOpacity={0.7} style={styles.saveButton}>
-                            <Text variant="bodyBold" style={styles.saveButtonText}>Save Changes</Text>
+                        {/* Save / Create Workspace Action */}
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            disabled={createWorkspaceMutation.isPending}
+                            onPress={handleSaveWorkspace}
+                            style={[
+                                styles.saveButton,
+                                { backgroundColor: colors.brandPrimary },
+                                createWorkspaceMutation.isPending && { opacity: 0.7 },
+                            ]}
+                        >
+                            {createWorkspaceMutation.isPending ? (
+                                <ActivityIndicator color={Colors.white} size="small" />
+                            ) : (
+                                <Text variant="bodyBold" style={[styles.saveButtonText, { color: Colors.white }]}>
+                                    {currentWorkspace ? 'Save Changes' : 'Create Workspace'}
+                                </Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 ) : (
@@ -479,6 +624,19 @@ export default function WorkspaceScreen() {
                 onClose={() => setIsInviteModalVisible(false)}
                 onSendInvite={handleSendInvite}
             />
+
+            {/* Reusable ActivityModal (Confirmation Yes/No, Success, Error, Info) */}
+            <ActivityModal
+                visible={activityModal.visible}
+                type={activityModal.type}
+                title={activityModal.title}
+                message={activityModal.message}
+                confirmText={activityModal.confirmText}
+                cancelText={activityModal.cancelText}
+                onConfirm={activityModal.onConfirm}
+                onCancel={activityModal.onCancel}
+                onClose={() => setActivityModal((prev) => ({ ...prev, visible: false }))}
+            />
         </SafeAreaView>
     );
 }
@@ -638,14 +796,42 @@ const styles = StyleSheet.create({
     saveButton: {
         height: 48,
         borderRadius: 12,
-        backgroundColor: '#E0E7FF',
+        backgroundColor: Colors.brandPrimary,
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 4,
     },
     saveButtonText: {
         fontSize: 14,
-        color: '#4338CA',
+        color: Colors.white,
+    },
+    activeWorkspaceBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+    },
+    logoPreviewContainer: {
+        alignItems: 'center',
+        marginBottom: 14,
+        marginTop: 4,
+    },
+    logoPreviewImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 16,
+        backgroundColor: '#F1F5F9',
+        marginBottom: 8,
+    },
+    removeLogoButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        borderWidth: 1,
     },
     // Team Members Styles
     metricCardContent: {

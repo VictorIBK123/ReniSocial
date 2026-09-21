@@ -144,7 +144,7 @@ export const Colors = {
 
 export type ThemeMode = 'light' | 'dark';
 export type ThemePreference = 'light' | 'dark' | 'system';
-export type ThemeColors = typeof LightColors;
+export type ThemeColors = Record<keyof typeof LightColors, string>;
 export type ColorKey = keyof typeof LightColors;
 
 /* ==========================================================================

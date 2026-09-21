@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constant';
-import { useAuthStore } from '../../store/authStore';
+import { useAuth } from '../../store/authStore';
 import { Text, View, Card, Badge } from '../components/UI';
 import Icon from '../components/IconResolver';
 import DashboardHeader from '../components/DashboardHeader';
@@ -12,7 +12,7 @@ import { useTheme } from '../../hooks/useTheme';
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<'This Week' | 'This Month'>('This Week');
 

@@ -8,6 +8,7 @@ import { Icon } from '../components/IconResolver';
 import DashboardHeader from '../components/DashboardHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
 
 /* ==========================================================================
    1. Header Component
@@ -98,14 +99,24 @@ export const SettingsTabSwitcher = ({ activeTab, onTabChange }: SettingsTabSwitc
 
 export const UserSummaryCard = () => {
     const { colors } = useTheme();
+    const { user } = useAuth();
+    const displayName = user?.fullName || (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Unknown User');
+    const displayEmail = user?.email || 'No email';
+    const isVerified = user?.verified === 1 || user?.verified === true;
     return (
         <Card>
             <View style={styles.userSummaryHeader}>
                 <View style={styles.avatarContainer}>
-                    <Image
-                        source={{ uri: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400' }}
-                        style={styles.avatar}
-                    />
+                    {user?.photoUrl ? (
+                        <Image
+                            source={{ uri: user.photoUrl }}
+                            style={styles.avatar}
+                        />
+                    ) : (
+                        <View style={[styles.avatar, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgAccent }]}>
+                            <Feather name="user" size={28} color={colors.brandPrimary} />
+                        </View>
+                    )}
                     <View style={[styles.activeBadgeIcon, { backgroundColor: colors.brandPrimary }]}>
                         <Feather name="check" size={12} color="#FFFFFF" />
                     </View>
@@ -113,17 +124,17 @@ export const UserSummaryCard = () => {
                 <View style={styles.userSummaryInfo}>
                     <View style={styles.userSummaryTitleRow}>
                         <Text variant="body" color="primary" style={styles.userName} numberOfLines={1}>
-                            Adetiba Adedotun
+                            {displayName}
                         </Text>
-                        <Badge variant="success" label="ACTIVE" style={{ borderWidth: 1, borderColor: '#A7F3D0', flexShrink: 0 }} />
+                        <Badge variant={isVerified ? 'success' : 'warning'} label={isVerified ? 'ACTIVE' : 'UNVERIFIED'} style={{ borderWidth: 1, borderColor: isVerified ? '#A7F3D0' : '#FDE68A', flexShrink: 0 }} />
                     </View>
                     <Text variant="caption" color="dark" style={styles.userEmail}>
-                        adetibaadedotun4@gmail.com
+                        {displayEmail}
                     </Text>
                     <View style={styles.memberSinceRow}>
                         <Feather name="calendar" size={12} color={colors.textDark} />
                         <Text variant="caption" color="dark" style={{ marginLeft: 6 }}>
-                            Member since July 19, 2026
+                            {user?.username ? `@${user.username}` : 'No username'}
                         </Text>
                     </View>
                 </View>
@@ -135,19 +146,23 @@ export const UserSummaryCard = () => {
 
 export const FullNameCard = () => {
     const { colors } = useTheme();
+    const { user } = useAuth();
+    const displayName = user?.fullName || (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Not set');
     return (
         <Card>
             <View style={styles.cardLabelRow}>
                 <Icon name="human" size={14} color={colors.textDark} />
                 <Text variant="caption" weight="bold" style={styles.cardLabelText}>FULL NAME</Text>
             </View>
-            <Text variant="body" color="primary" style={styles.cardValue}>Adetiba Adedotun</Text>
+            <Text variant="body" color="primary" style={styles.cardValue}>{displayName}</Text>
         </Card>
     );
 };
 
 export const EmailAddressCard = () => {
     const { colors } = useTheme();
+    const { user } = useAuth();
+    const displayEmail = user?.email || 'Not set';
     return (
         <Card>
             <View style={styles.cardLabelRowBetween}>
@@ -157,7 +172,7 @@ export const EmailAddressCard = () => {
                 </View>
                 <Feather name="copy" size={16} color={colors.textDark} />
             </View>
-            <Text variant="body" color="primary" style={styles.cardValue}>adetibaadedotun4@gmail.com</Text>
+            <Text variant="body" color="primary" style={styles.cardValue}>{displayEmail}</Text>
         </Card>
     );
 };
