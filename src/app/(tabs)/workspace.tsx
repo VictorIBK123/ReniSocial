@@ -1,84 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, FlatList, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text, Card, Badge, Button } from '../components/UI';
-import { Colors, Fonts } from '../../constant';
 import { Feather } from '@expo/vector-icons';
-import { Icon } from '../components/IconResolver';
-import DashboardHeader from '../components/DashboardHeader';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    Image,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Colors, Fonts } from '../../constant';
 import { useTheme } from '../../hooks/useTheme';
-import InviteMemberModal, { TeamRole } from '../components/workspace/InviteMemberModal';
-import { useWorkspace, useCreateWorkspaceMutation } from '../../hooks/useWorkspace';
+import {
+    useCreateWorkspaceMutation,
+    useInviteWorkspaceMemberMutation,
+    useRemoveWorkspaceMemberMutation,
+    useUploadWorkspaceLogoMutation,
+    useWorkspace,
+    useWorkspaceMembersQuery,
+} from '../../hooks/useWorkspace';
+import { WorkspaceMember, WorkspaceRole } from '../../services/workspace.service';
+import { useAuth } from '../../store/authStore';
 import ActivityModal, { ActivityModalType } from '../components/ActivityModal';
-
-interface Member {
-    id: string;
-    name: string;
-    email: string;
-    role: 'Owner' | 'Admin' | 'Editor' | 'Viewer';
-    isYou?: boolean;
-    avatar?: string;
-    initials?: string;
-}
-
-const MEMBERS: Member[] = [
-    {
-        id: '1',
-        name: 'Adetiba Adedotun',
-        email: 'adetiba@renisocial.com',
-        role: 'Owner',
-        isYou: true,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
-    },
-    {
-        id: '2',
-        name: 'Sarah Jenkins',
-        email: 'sarah.j@renisocial.com',
-        role: 'Admin',
-        initials: 'SJ',
-    },
-    {
-        id: '3',
-        name: 'Marcus Chen',
-        email: 'm.chen@agency.com',
-        role: 'Editor',
-        avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200',
-    },
-    {
-        id: '4',
-        name: 'Elena Rodriguez',
-        email: 'elena@freelance.co',
-        role: 'Editor',
-        initials: 'EL',
-    },
-    {
-        id: '5',
-        name: 'David Smith',
-        email: 'd.smith@client.com',
-        role: 'Viewer',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-    },
-];
-
-const PENDING_INVITES = [
-    { id: '1', email: 'alex@example.com', role: 'Editor' },
-    { id: '2', email: 'client@brand.com', role: 'Viewer' },
-];
+import DashboardHeader from '../components/DashboardHeader';
+import { Icon } from '../components/IconResolver';
+import { Card, Text } from '../components/UI';
+import InviteMemberModal, { TeamRole } from '../components/workspace/InviteMemberModal';
 
 export default function WorkspaceScreen() {
     const router = useRouter();
+    const currentUser = useAuth((state) => state.user);
     const { currentWorkspace } = useWorkspace();
+    const {
+        data: members = [],
+        isLoading: isLoadingMembers,
+        refetch: refetchMembers,
+    } = useWorkspaceMembersQuery(currentWorkspace?.id);
+
     const createWorkspaceMutation = useCreateWorkspaceMutation();
+    const uploadWorkspaceLogoMutation = useUploadWorkspaceLogoMutation();
+    const inviteMemberMutation = useInviteWorkspaceMemberMutation();
+    const removeMemberMutation = useRemoveWorkspaceMemberMutation();
 
     const [activeTab, setActiveTab] = useState<'Workspace Details' | 'Team Members'>('Workspace Details');
-    const [brandName, setBrandName] = useState(currentWorkspace?.name || '');
-    const [description, setDescription] = useState(currentWorkspace?.description || '');
-    const [logoUrl, setLogoUrl] = useState(currentWorkspace?.logo_url || '');
-    const [planType, setPlanType] = useState(currentWorkspace?.type || 'Personal');
+    const [brandName, setBrandName] = useState('');
+    const [description, setDescription] = useState('');
+    const [logoUrl, setLogoUrl] = useState('');
+    const [logoId, setLogoId] = useState<string | null>(null);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [planType, setPlanType] = useState('Personal');
     const [searchQuery, setSearchQuery] = useState('');
     const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
-    const [pendingInvites, setPendingInvites] = useState<{ id: string; email: string; role: TeamRole }[]>(PENDING_INVITES as { id: string; email: string; role: TeamRole }[]);
+    const [pendingInvites, setPendingInvites] = useState<{ id: string; email: string; role: string }[]>([]);
 
     // Activity modal state (supports confirmation with Yes/No toggle, success, error, info)
     const [activityModal, setActivityModal] = useState<{
@@ -97,25 +75,92 @@ export default function WorkspaceScreen() {
         message: '',
     });
 
-    useEffect(() => {
-        if (currentWorkspace) {
-            setBrandName(currentWorkspace.name || '');
-            setDescription(currentWorkspace.description || '');
-            setLogoUrl(currentWorkspace.logo_url || '');
-            setPlanType(currentWorkspace.type || 'Personal');
+    const handlePickAndUploadLogo = async () => {
+        try {
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!permissionResult.granted) {
+                setActivityModal({
+                    visible: true,
+                    type: 'error',
+                    title: 'Permission Required',
+                    message: 'Photo library permission is required to choose a brand logo.',
+                    confirmText: 'Dismiss',
+                    onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+                });
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (result.canceled || !result.assets || result.assets.length === 0) {
+                return;
+            }
+
+            const asset = result.assets[0];
+            // Immediately show preview and activity indicator
+            setLogoUrl(asset.uri);
+            setIsUploadingLogo(true);
+
+            const uploadRes = await uploadWorkspaceLogoMutation.mutateAsync({
+                uri: asset.uri,
+                name: asset.fileName || `logo_${Date.now()}.jpg`,
+                type: asset.mimeType || 'image/jpeg',
+            });
+
+            if (uploadRes.status && uploadRes.data?.id) {
+                setLogoId(uploadRes.data.id);
+                if (uploadRes.data.file_url) {
+                    setLogoUrl(uploadRes.data.file_url);
+                }
+            } else {
+                throw new Error(uploadRes.message || 'Failed to upload logo.');
+            }
+        } catch (error: any) {
+            console.error('[WorkspaceScreen] Logo upload error:', error);
+            const errorMsg =
+                error?.response?.data?.message ||
+                error?.message ||
+                'Failed to upload brand logo. Please check your network and try again.';
+            setActivityModal({
+                visible: true,
+                type: 'error',
+                title: 'Logo Upload Failed',
+                message: errorMsg,
+                confirmText: 'Dismiss',
+                onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+            });
+        } finally {
+            setIsUploadingLogo(false);
         }
-    }, [currentWorkspace]);
+    };
+
+    const handleRemoveLogo = () => {
+        setLogoUrl('');
+        setLogoId(null);
+    };
 
     const executeWorkspaceCreation = () => {
         createWorkspaceMutation.mutate(
             {
                 name: brandName.trim(),
                 description: description.trim(),
-                logo_url: logoUrl.trim(),
+                logo_id: logoId || undefined,
                 type: (planType || 'Personal').toLowerCase(),
             },
             {
                 onSuccess: (data) => {
+                    // Reset creation form
+                    setBrandName('');
+                    setDescription('');
+                    setLogoUrl('');
+                    setLogoId(null);
+                    setPlanType('Personal');
+
                     setActivityModal({
                         visible: true,
                         type: 'success',
@@ -150,6 +195,18 @@ export default function WorkspaceScreen() {
     };
 
     const handleSaveWorkspace = () => {
+        if (isUploadingLogo) {
+            setActivityModal({
+                visible: true,
+                type: 'info',
+                title: 'Logo Uploading',
+                message: 'Please wait for your logo to finish uploading before saving.',
+                confirmText: 'Got It',
+                onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+            });
+            return;
+        }
+
         if (!brandName.trim()) {
             setActivityModal({
                 visible: true,
@@ -167,48 +224,174 @@ export default function WorkspaceScreen() {
     };
 
     const handleSendInvite = (email: string, role: TeamRole) => {
-        const newInvite = {
-            id: Date.now().toString(),
-            email,
-            role,
-        };
-        setPendingInvites((prev) => [newInvite, ...prev]);
+        if (!currentWorkspace?.id) {
+            setActivityModal({
+                visible: true,
+                type: 'error',
+                title: 'No Workspace Selected',
+                message: 'Please select or create an active workspace before inviting members.',
+                confirmText: 'Dismiss',
+                onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+            });
+            return;
+        }
+
+        const backendRole: WorkspaceRole = role.toLowerCase() === 'admin' ? 'admin' : 'member';
+
+        inviteMemberMutation.mutate(
+            {
+                workspaceId: currentWorkspace.id,
+                payload: {
+                    email: email.trim(),
+                    role: backendRole,
+                },
+            },
+            {
+                onSuccess: (data) => {
+                    setPendingInvites((prev) => [
+                        { id: Date.now().toString(), email: email.trim(), role },
+                        ...prev,
+                    ]);
+                    setActivityModal({
+                        visible: true,
+                        type: 'success',
+                        title: 'Invitation Sent',
+                        message: data.message || `An invitation has been sent to ${email}.`,
+                        confirmText: 'Continue',
+                        onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+                    });
+                },
+                onError: (error: any) => {
+                    const errorMsg =
+                        error?.response?.data?.message ||
+                        error?.message ||
+                        'Failed to invite member. Please check the email and try again.';
+                    setActivityModal({
+                        visible: true,
+                        type: 'error',
+                        title: 'Invite Failed',
+                        message: errorMsg,
+                        confirmText: 'Dismiss',
+                        onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+                    });
+                },
+            }
+        );
     };
 
     const handleRevokeInvite = (id: string) => {
         setPendingInvites((prev) => prev.filter((item) => item.id !== id));
     };
 
-    const filteredMembers = MEMBERS.filter(
-        (m) =>
-            m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            m.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const handleRemoveMember = (member: WorkspaceMember) => {
+        if (!currentWorkspace?.id) return;
+        const memberId = member.user_id || member.user?.id || member.id;
+        if (!memberId) return;
 
-    const renderRoleBadge = (role: Member['role']) => {
+        const memberName =
+            member.name ||
+            (member.user?.first_name || member.user?.last_name
+                ? `${member.user?.first_name || ''} ${member.user?.last_name || ''}`.trim()
+                : member.user?.name || member.email || 'this member');
+
+        setActivityModal({
+            visible: true,
+            type: 'info',
+            title: 'Remove Member',
+            message: `Are you sure you want to remove ${memberName} from this workspace?`,
+            confirmText: 'Remove',
+            cancelText: 'Cancel',
+            onConfirm: () => {
+                setActivityModal((prev) => ({ ...prev, visible: false }));
+                removeMemberMutation.mutate(
+                    { workspaceId: currentWorkspace.id, userId: memberId },
+                    {
+                        onSuccess: (res) => {
+                            setActivityModal({
+                                visible: true,
+                                type: 'success',
+                                title: 'Member Removed',
+                                message: res.message || `${memberName} has been removed from the workspace.`,
+                                confirmText: 'OK',
+                                onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+                            });
+                        },
+                        onError: (err: any) => {
+                            const errMsg =
+                                err?.response?.data?.message || err?.message || 'Failed to remove member.';
+                            setActivityModal({
+                                visible: true,
+                                type: 'error',
+                                title: 'Removal Failed',
+                                message: errMsg,
+                                confirmText: 'Dismiss',
+                                onConfirm: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+                            });
+                        },
+                    }
+                );
+            },
+            onCancel: () => setActivityModal((prev) => ({ ...prev, visible: false })),
+        });
+    };
+
+    const filteredMembers = (members || []).filter((m: WorkspaceMember) => {
+        const memberName =
+            m.name ||
+            (m.user?.first_name || m.user?.last_name
+                ? `${m.user?.first_name || ''} ${m.user?.last_name || ''}`.trim()
+                : m.user?.name || '');
+        const memberEmail = m.email || m.user?.email || '';
+        return (
+            memberName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            memberEmail.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    });
+
+    const userMember = (members || []).find(
+        (m: WorkspaceMember) =>
+            (currentUser?.id &&
+                (m.user_id === currentUser.id || m.id === currentUser.id || m.user?.id === currentUser.id)) ||
+            (currentUser?.email && (m.email === currentUser.email || m.user?.email === currentUser.email))
+    );
+    const yourRoleDisplay = userMember?.role
+        ? userMember.role.charAt(0).toUpperCase() + userMember.role.slice(1)
+        : currentWorkspace?.owner_id === currentUser?.id
+        ? 'Owner'
+        : 'Member';
+
+    const renderRoleBadge = (rawRole?: string) => {
+        const role = (rawRole || 'member').toLowerCase();
         switch (role) {
-            case 'Owner':
+            case 'owner':
                 return (
                     <View style={[styles.roleBadge, styles.roleOwner]}>
                         <Text style={[styles.roleText, { color: Colors.white }]}>Owner</Text>
                     </View>
                 );
-            case 'Admin':
+            case 'admin':
                 return (
                     <View style={[styles.roleBadge, styles.roleAdmin]}>
                         <Text style={[styles.roleText, { color: '#3730A3' }]}>Admin</Text>
                     </View>
                 );
-            case 'Editor':
+            case 'editor':
                 return (
                     <View style={[styles.roleBadge, styles.roleEditor]}>
                         <Text style={[styles.roleText, { color: '#475569' }]}>Editor</Text>
                     </View>
                 );
-            case 'Viewer':
+            case 'viewer':
                 return (
                     <View style={[styles.roleBadge, styles.roleViewer]}>
                         <Text style={[styles.roleText, { color: '#64748B' }]}>Viewer</Text>
+                    </View>
+                );
+            case 'member':
+            default:
+                return (
+                    <View style={[styles.roleBadge, styles.roleEditor]}>
+                        <Text style={[styles.roleText, { color: '#475569' }]}>Member</Text>
                     </View>
                 );
         }
@@ -218,7 +401,20 @@ export default function WorkspaceScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.bgApp }]}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    activeTab === 'Team Members' ? (
+                        <RefreshControl
+                            refreshing={isLoadingMembers}
+                            onRefresh={refetchMembers}
+                            tintColor={colors.brandPrimary}
+                            colors={[colors.brandPrimary]}
+                        />
+                    ) : undefined
+                }
+            >
                 <DashboardHeader />
 
                 {/* Back Button & Title */}
@@ -287,38 +483,50 @@ export default function WorkspaceScreen() {
                                 BRAND LOGO
                             </Text>
 
-                            {logoUrl ? (
+                            {isUploadingLogo ? (
+                                <View style={[styles.uploadBox, styles.uploadingBox, { borderColor: colors.brandPrimary, backgroundColor: colors.bgCard }]}>
+                                    <ActivityIndicator size="small" color={colors.brandPrimary} />
+                                    <Text style={[styles.uploadingText, { color: colors.brandPrimary }]}>
+                                        Uploading logo...
+                                    </Text>
+                                </View>
+                            ) : logoUrl ? (
                                 <View style={styles.logoPreviewContainer}>
-                                    <Image source={{ uri: logoUrl }} style={styles.logoPreviewImage} />
+                                    <TouchableOpacity
+                                        activeOpacity={0.8}
+                                        onPress={handlePickAndUploadLogo}
+                                        style={[styles.logoImageWrapper, { borderColor: colors.borderLight }]}
+                                    >
+                                        <Image source={{ uri: logoUrl }} style={styles.logoPreviewImage} />
+                                        <View style={[styles.editIconBadge, { backgroundColor: colors.brandPrimary, borderColor: colors.bgCard }]}>
+                                            <Feather name="camera" size={12} color="#FFFFFF" />
+                                        </View>
+                                    </TouchableOpacity>
+
                                     <TouchableOpacity
                                         activeOpacity={0.7}
-                                        onPress={() => setLogoUrl('')}
+                                        onPress={handleRemoveLogo}
                                         style={[styles.removeLogoButton, { borderColor: colors.borderLight }]}
                                     >
-                                        <Feather name="trash-2" size={15} color={Colors.danger} />
+                                        <Feather name="trash-2" size={13} color={Colors.danger} />
                                         <Text style={{ fontSize: 12, color: Colors.danger, marginLeft: 4 }}>Remove Logo</Text>
                                     </TouchableOpacity>
                                 </View>
                             ) : (
-                                <View style={styles.uploadBox}>
-                                    <Icon name="upload" size={24} color="#475569" />
-                                    <Text style={styles.uploadText}>NO LOGO SET</Text>
-                                </View>
+                                <TouchableOpacity
+                                    activeOpacity={0.7}
+                                    onPress={handlePickAndUploadLogo}
+                                    style={[styles.uploadBox, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}
+                                >
+                                    <View style={[styles.uploadIconCircle, { backgroundColor: colors.bgAccent }]}>
+                                        <Icon name="upload" size={20} color={colors.brandPrimary} />
+                                    </View>
+                                    <Text style={[styles.uploadBoxTitle, { color: colors.textDark }]}>Upload Brand Logo</Text>
+                                    <Text style={[styles.uploadBoxSubtitle, { color: colors.textMuted }]}>
+                                        Tap to pick image from your device
+                                    </Text>
+                                </TouchableOpacity>
                             )}
-
-                            <Text variant="body" color="dark" style={styles.logoHint}>
-                                Enter a direct image URL for your workspace logo (e.g. PNG, JPG).
-                            </Text>
-
-                            <TextInput
-                                style={[styles.textInput, { backgroundColor: colors.bgCard, color: colors.textDark, borderColor: colors.borderLight }]}
-                                value={logoUrl}
-                                onChangeText={setLogoUrl}
-                                placeholder="https://example.com/logo.png"
-                                placeholderTextColor="#94A3B8"
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                            />
                         </Card>
 
                         {/* Brand Name & Description Card */}
@@ -381,19 +589,26 @@ export default function WorkspaceScreen() {
                         {/* Save / Create Workspace Action */}
                         <TouchableOpacity
                             activeOpacity={0.8}
-                            disabled={createWorkspaceMutation.isPending}
+                            disabled={createWorkspaceMutation.isPending || isUploadingLogo}
                             onPress={handleSaveWorkspace}
                             style={[
                                 styles.saveButton,
                                 { backgroundColor: colors.brandPrimary },
-                                createWorkspaceMutation.isPending && { opacity: 0.7 },
+                                (createWorkspaceMutation.isPending || isUploadingLogo) && { opacity: 0.7 },
                             ]}
                         >
                             {createWorkspaceMutation.isPending ? (
                                 <ActivityIndicator color={Colors.white} size="small" />
+                            ) : isUploadingLogo ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <ActivityIndicator color={Colors.white} size="small" />
+                                    <Text variant="bodyBold" style={[styles.saveButtonText, { color: Colors.white }]}>
+                                        Uploading Logo...
+                                    </Text>
+                                </View>
                             ) : (
                                 <Text variant="bodyBold" style={[styles.saveButtonText, { color: Colors.white }]}>
-                                    {currentWorkspace ? 'Save Changes' : 'Create Workspace'}
+                                    Create Workspace
                                 </Text>
                             )}
                         </TouchableOpacity>
@@ -408,7 +623,7 @@ export default function WorkspaceScreen() {
                                     <Text variant="caption" weight="bold" style={styles.cardLabelText}>
                                         TOTAL MEMBERS
                                     </Text>
-                                    <Text style={styles.metricValue}>5</Text>
+                                    <Text style={styles.metricValue}>{members.length}</Text>
                                 </View>
                                 <Icon name="members" size={30} color={Colors.brandPrimary} />
                             </View>
@@ -436,10 +651,31 @@ export default function WorkspaceScreen() {
                                 YOUR ROLE
                             </Text>
                             <View style={styles.yourRoleBottomRow}>
-                                <Text style={styles.yourRoleValue}>Owner</Text>
+                                <Text style={styles.yourRoleValue}>{yourRoleDisplay}</Text>
                                 <Icon name="badge" size={24} color="rgba(255, 255, 255, 0.85)" />
                             </View>
                         </View>
+
+                        {/* No Active Workspace Warning Banner */}
+                        {!currentWorkspace && (
+                            <Card style={{ paddingVertical: 20, alignItems: 'center', marginBottom: 12 }}>
+                                <Icon name="workspace" size={32} color={colors.brandPrimary} />
+                                <Text variant="bodyBold" color="dark" style={{ marginTop: 8, textAlign: 'center' }}>
+                                    No Active Workspace
+                                </Text>
+                                <Text variant="caption" color="muted" style={{ textAlign: 'center', marginTop: 4, marginBottom: 12 }}>
+                                    Please select or create an active workspace first to view and manage team members.
+                                </Text>
+                                <TouchableOpacity
+                                    style={[styles.saveButton, { backgroundColor: colors.brandPrimary, height: 38, paddingHorizontal: 20, marginTop: 4 }]}
+                                    onPress={() => setActiveTab('Workspace Details')}
+                                >
+                                    <Text variant="bodyBold" style={{ color: Colors.white, fontSize: 13 }}>
+                                        Go to Create Workspace
+                                    </Text>
+                                </TouchableOpacity>
+                            </Card>
+                        )}
 
                         {/* Team Members Section */}
                         <View style={styles.sectionHeaderRow}>
@@ -478,95 +714,154 @@ export default function WorkspaceScreen() {
                         </View>
 
                         {/* Members List */}
-                        <FlatList
-                            data={filteredMembers}
-                            keyExtractor={(item) => item.id}
-                            scrollEnabled={false}
-                            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-                            renderItem={({ item: member }) => (
-                                <Card style={styles.memberCard}>
-                                    {/* Top Row: Avatar + Name & Email + More Button */}
-                                    <View style={styles.memberTopRow}>
-                                        {member.avatar ? (
-                                            <Image source={{ uri: member.avatar }} style={styles.avatarImage} />
-                                        ) : (
-                                            <View style={styles.avatarInitials}>
-                                                <Text style={styles.avatarInitialsText}>{member.initials}</Text>
-                                            </View>
-                                        )}
+                        {isLoadingMembers ? (
+                            <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                                <ActivityIndicator size="small" color={colors.brandPrimary} />
+                                <Text variant="caption" style={{ marginTop: 8, color: colors.textMuted }}>
+                                    Loading team members...
+                                </Text>
+                            </View>
+                        ) : filteredMembers.length === 0 ? (
+                            <Card style={{ paddingVertical: 24, alignItems: 'center' }}>
+                                <Icon name="team-fill" size={32} color={colors.textMuted} />
+                                <Text variant="bodyBold" color="dark" style={{ marginTop: 8 }}>
+                                    No Members Found
+                                </Text>
+                                <Text variant="caption" color="muted" style={{ textAlign: 'center', marginTop: 4, paddingHorizontal: 16 }}>
+                                    {searchQuery
+                                        ? 'No members match your search criteria.'
+                                        : 'There are no members in this workspace yet. Tap "Invite" above to add team members.'}
+                                </Text>
+                            </Card>
+                        ) : (
+                            <FlatList
+                                data={filteredMembers}
+                                keyExtractor={(item, index) => item.id || item.user_id || item.user?.id || String(index)}
+                                scrollEnabled={false}
+                                ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+                                renderItem={({ item: member }) => {
+                                    const memberName =
+                                        member.name ||
+                                        (member.user?.first_name || member.user?.last_name
+                                            ? `${member.user?.first_name || ''} ${member.user?.last_name || ''}`.trim()
+                                            : member.user?.name || member.email || 'Team Member');
+                                    const memberEmail = member.email || member.user?.email || '';
+                                    const initials =
+                                        memberName
+                                            .split(' ')
+                                            .map((n: string) => n[0])
+                                            .filter(Boolean)
+                                            .slice(0, 2)
+                                            .join('')
+                                            .toUpperCase() || 'TM';
+                                    const avatar = member.avatar || member.user?.avatar_url || member.avatar_url;
+                                    const isYou = Boolean(
+                                        (currentUser?.id &&
+                                            (member.user_id === currentUser.id ||
+                                                member.id === currentUser.id ||
+                                                member.user?.id === currentUser.id)) ||
+                                        (currentUser?.email &&
+                                            (member.email === currentUser.email || member.user?.email === currentUser.email))
+                                    );
 
-                                        <View style={styles.memberInfo}>
-                                            <View style={styles.memberNameRow}>
-                                                <Text variant="bodyBold" color="dark" style={styles.memberName}>
-                                                    {member.name}
-                                                </Text>
-                                                {member.isYou && (
-                                                    <View style={styles.youBadge}>
-                                                        <Text style={styles.youBadgeText}>You</Text>
+                                    return (
+                                        <Card style={styles.memberCard}>
+                                            {/* Top Row: Avatar + Name & Email + More Button */}
+                                            <View style={styles.memberTopRow}>
+                                                {avatar ? (
+                                                    <Image source={{ uri: avatar }} style={styles.avatarImage} />
+                                                ) : (
+                                                    <View style={styles.avatarInitials}>
+                                                        <Text style={styles.avatarInitialsText}>{initials}</Text>
                                                     </View>
                                                 )}
+
+                                                <View style={styles.memberInfo}>
+                                                    <View style={styles.memberNameRow}>
+                                                        <Text variant="bodyBold" color="dark" style={styles.memberName}>
+                                                            {memberName}
+                                                        </Text>
+                                                        {isYou && (
+                                                            <View style={styles.youBadge}>
+                                                                <Text style={styles.youBadgeText}>You</Text>
+                                                            </View>
+                                                        )}
+                                                    </View>
+                                                    {memberEmail ? (
+                                                        <Text variant="caption" color="muted" style={styles.memberEmail}>
+                                                            {memberEmail}
+                                                        </Text>
+                                                    ) : null}
+                                                </View>
+
+                                                {!isYou && (
+                                                    <TouchableOpacity
+                                                        style={styles.moreButton}
+                                                        onPress={() => handleRemoveMember(member)}
+                                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                                    >
+                                                        <Feather name="more-horizontal" size={20} color="#64748B" />
+                                                    </TouchableOpacity>
+                                                )}
                                             </View>
-                                            <Text variant="caption" color="muted" style={styles.memberEmail}>
-                                                {member.email}
-                                            </Text>
-                                        </View>
 
-                                        <TouchableOpacity style={styles.moreButton}>
-                                            <Feather name="more-horizontal" size={20} color="#64748B" />
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    {/* Bottom Row: Role Badge directly below avatar */}
-                                    <View style={styles.memberRoleContainer}>
-                                        {renderRoleBadge(member.role)}
-                                    </View>
-                                </Card>
-                            )}
-                        />
+                                            {/* Bottom Row: Role Badge directly below avatar */}
+                                            <View style={styles.memberRoleContainer}>
+                                                {renderRoleBadge(member.role)}
+                                            </View>
+                                        </Card>
+                                    );
+                                }}
+                            />
+                        )}
 
                         {/* Pending Invites Section */}
-                        <View style={[styles.sectionHeaderRow, { marginTop: 12 }]}>
-                            <View style={styles.pendingHeaderLeft}>
-                                <Icon name="pending" size={20} color={Colors.brandPrimary} />
-                                <Text variant="heading" color="primary" style={[styles.sectionTitle, { marginLeft: 8 }]}>
-                                    Pending Invites
-                                </Text>
-                            </View>
-                            <View style={styles.countBadge}>
-                                <Text variant="caption" style={styles.countBadgeText}>
-                                    {pendingInvites.length}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <FlatList
-                            data={pendingInvites}
-                            keyExtractor={(item) => item.id}
-                            scrollEnabled={false}
-                            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-                            renderItem={({ item: invite }) => (
-                                <Card>
-                                    <View style={styles.inviteCardContent}>
-                                        <View>
-                                            <Text variant="bodyBold" color="dark" style={styles.inviteEmail}>
-                                                {invite.email}
-                                            </Text>
-                                            <Text variant="caption" color="muted" style={styles.inviteSubtext}>
-                                                Invited as {invite.role}
-                                            </Text>
-                                        </View>
-                                        <TouchableOpacity
-                                            activeOpacity={0.7}
-                                            onPress={() => handleRevokeInvite(invite.id)}
-                                        >
-                                            <Text variant="bodyBold" style={styles.revokeText}>
-                                                Revoke
-                                            </Text>
-                                        </TouchableOpacity>
+                        {pendingInvites.length > 0 && (
+                            <>
+                                <View style={[styles.sectionHeaderRow, { marginTop: 12 }]}>
+                                    <View style={styles.pendingHeaderLeft}>
+                                        <Icon name="pending" size={20} color={Colors.brandPrimary} />
+                                        <Text variant="heading" color="primary" style={[styles.sectionTitle, { marginLeft: 8 }]}>
+                                            Pending Invites
+                                        </Text>
                                     </View>
-                                </Card>
-                            )}
-                        />
+                                    <View style={styles.countBadge}>
+                                        <Text variant="caption" style={styles.countBadgeText}>
+                                            {pendingInvites.length}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <FlatList
+                                    data={pendingInvites}
+                                    keyExtractor={(item) => item.id}
+                                    scrollEnabled={false}
+                                    ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+                                    renderItem={({ item: invite }) => (
+                                        <Card>
+                                            <View style={styles.inviteCardContent}>
+                                                <View>
+                                                    <Text variant="bodyBold" color="dark" style={styles.inviteEmail}>
+                                                        {invite.email}
+                                                    </Text>
+                                                    <Text variant="caption" color="muted" style={styles.inviteSubtext}>
+                                                        Invited as {invite.role}
+                                                    </Text>
+                                                </View>
+                                                <TouchableOpacity
+                                                    activeOpacity={0.7}
+                                                    onPress={() => handleRevokeInvite(invite.id)}
+                                                >
+                                                    <Text variant="bodyBold" style={styles.revokeText}>
+                                                        Revoke
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </Card>
+                                    )}
+                                />
+                            </>
+                        )}
 
                         {/* Role Permissions Card */}
                         <Card style={{ marginTop: 4 }}>
@@ -708,9 +1003,10 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         textTransform: 'uppercase',
     },
+
     uploadBox: {
-        width: 140,
-        height: 110,
+        width: '100%',
+        height: 120,
         borderWidth: 1.5,
         borderColor: '#CBD5E1',
         borderStyle: 'dashed',
@@ -719,33 +1015,67 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 4,
-        marginBottom: 14,
+        marginBottom: 4,
+        gap: 6,
     },
-    uploadText: {
-        fontSize: 11,
-        fontFamily: Fonts.alt.bold,
-        color: '#475569',
-        letterSpacing: 0.8,
-        marginTop: 6,
+    uploadingBox: {
+        borderStyle: 'solid',
+        gap: 8,
     },
-    logoHint: {
+    uploadingText: {
         fontSize: 13,
-        lineHeight: 18,
-        color: '#475569',
-        marginBottom: 14,
+        fontFamily: Fonts.body.semiBold,
     },
-    chooseFileButton: {
-        alignSelf: 'flex-start',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 10,
+    uploadIconCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uploadBoxTitle: {
+        fontSize: 13.5,
+        fontFamily: Fonts.body.bold,
+    },
+    uploadBoxSubtitle: {
+        fontSize: 12,
+        fontFamily: Fonts.body.regular,
+    },
+    logoPreviewContainer: {
+        alignItems: 'center',
+        marginVertical: 6,
+        gap: 12,
+    },
+    logoImageWrapper: {
+        padding: 4,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: Colors.borderLight,
-        backgroundColor: Colors.white,
+        position: 'relative',
     },
-    chooseFileText: {
-        fontSize: 13,
-        color: Colors.textDark,
+    logoPreviewImage: {
+        width: 84,
+        height: 84,
+        borderRadius: 16,
+        backgroundColor: '#F1F5F9',
+    },
+    editIconBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        borderWidth: 2,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    removeLogoButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
     },
     textInput: {
         height: 48,
@@ -813,26 +1143,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         borderWidth: 1,
     },
-    logoPreviewContainer: {
-        alignItems: 'center',
-        marginBottom: 14,
-        marginTop: 4,
-    },
-    logoPreviewImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 16,
-        backgroundColor: '#F1F5F9',
-        marginBottom: 8,
-    },
-    removeLogoButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
-        borderWidth: 1,
-    },
+
     // Team Members Styles
     metricCardContent: {
         flexDirection: 'row',

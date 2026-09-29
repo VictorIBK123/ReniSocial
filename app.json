@@ -31,6 +31,12 @@
           "image": "./assets/icons/logo-dark.png",
           "imageWidth": 60
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow ReniSocial to access your photos to select workspace logos."
+        }
       ]
     ],
     "experiments": {

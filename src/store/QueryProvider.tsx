@@ -1,5 +1,5 @@
 import React from 'react';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, defaultShouldDehydrateQuery } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -34,6 +34,16 @@ export default function QueryProvider({ children }: QueryProviderProps) {
         persister: asyncStoragePersister,
         // Persist cache for 24 hours
         maxAge: 1000 * 60 * 60 * 24,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            // Exclude queries explicitly flagged with meta.persist = false or member queries
+            if (query.meta?.persist === false) return false;
+            if (Array.isArray(query.queryKey) && query.queryKey.includes('members')) {
+              return false;
+            }
+            return defaultShouldDehydrateQuery(query);
+          },
+        },
       }}
     >
       {children}

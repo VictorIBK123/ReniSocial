@@ -7,12 +7,24 @@ import {
   createWorkspace,
   CreateWorkspacePayload,
   CreateWorkspaceResponse,
+  getWorkspaceMembers,
   getWorkspaces,
+  InviteWorkspaceMemberPayload,
+  InviteWorkspaceMemberResponse,
+  inviteWorkspaceMember,
+  removeWorkspaceMember,
+  RemoveWorkspaceMemberResponse,
+  uploadWorkspaceLogo,
+  UploadLogoFile,
+  UploadWorkspaceLogoResponse,
   Workspace,
+  WorkspaceMember,
 } from '../services/workspace.service';
 import { useAuth } from '../store/authStore';
 
 export const WORKSPACES_QUERY_KEY = ['workspaces'] as const;
+export const WORKSPACE_MEMBERS_QUERY_KEY = (workspaceId?: string) =>
+  ['workspaces', workspaceId || '', 'members'] as const;
 
 // Lightweight store to retain user's chosen active workspace ID across sessions
 interface ActiveWorkspaceState {
@@ -77,6 +89,21 @@ export function useCreateWorkspaceMutation() {
 }
 
 /**
+ * TanStack Query mutation hook to upload workspace logo at /api/in/workspaces/logo-upload
+ */
+export function useUploadWorkspaceLogoMutation() {
+  return useMutation<UploadWorkspaceLogoResponse, Error, UploadLogoFile | FormData>({
+    mutationFn: (file: UploadLogoFile | FormData) => uploadWorkspaceLogo(file),
+    onSuccess: (response) => {
+      console.log('[useUploadWorkspaceLogoMutation] Logo uploaded successfully:', response);
+    },
+    onError: (error) => {
+      console.error('[useUploadWorkspaceLogoMutation] Failed to upload logo:', error);
+    },
+  });
+}
+
+/**
  * Main workspace hook that provides:
  * - Current workspaces list (fresh from TanStack Query)
  * - Current active workspace
@@ -111,3 +138,77 @@ export function useWorkspace() {
 }
 
 export const useWorkspaces = useWorkspace;
+ 
+/**
+ * TanStack Query hook to fetch workspace members from /api/in/workspaces/in/:id/members
+ * NOTE: Data is kept in TanStack Query in-memory cache and intentionally NOT saved to AsyncStorage.
+ */
+export function useWorkspaceMembersQuery(workspaceId?: string) {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery<WorkspaceMember[]>({
+    queryKey: WORKSPACE_MEMBERS_QUERY_KEY(workspaceId),
+    queryFn: async () => {
+      if (!workspaceId) return [];
+      console.log('[useWorkspaceMembersQuery] Fetching members for workspace:', workspaceId);
+      const response = await getWorkspaceMembers(workspaceId);
+      if (response.status && Array.isArray(response.data)) {
+        return response.data;
+      }
+      return [];
+    },
+    enabled: isAuthenticated && Boolean(workspaceId),
+    meta: {
+      persist: false,
+    },
+  });
+}
+
+/**
+ * TanStack Query mutation hook to invite/add a member to workspace at /api/in/workspaces/in/:id/members
+ */
+export function useInviteWorkspaceMemberMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    InviteWorkspaceMemberResponse,
+    Error,
+    { workspaceId: string; payload: InviteWorkspaceMemberPayload }
+  >({
+    mutationFn: ({ workspaceId, payload }) => inviteWorkspaceMember(workspaceId, payload),
+    onSuccess: (response, variables) => {
+      console.log('[useInviteWorkspaceMemberMutation] Member invited successfully:', response);
+      // Invalidate and refetch members for this workspace
+      queryClient.invalidateQueries({
+        queryKey: WORKSPACE_MEMBERS_QUERY_KEY(variables.workspaceId),
+      });
+    },
+    onError: (error) => {
+      console.error('[useInviteWorkspaceMemberMutation] Failed to invite member:', error);
+    },
+  });
+}
+
+/**
+ * TanStack Query mutation hook to remove a member from workspace at /api/in/workspaces/in/:id/members/in/:userId
+ */
+export function useRemoveWorkspaceMemberMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    RemoveWorkspaceMemberResponse,
+    Error,
+    { workspaceId: string; userId: string }
+  >({
+    mutationFn: ({ workspaceId, userId }) => removeWorkspaceMember(workspaceId, userId),
+    onSuccess: (response, variables) => {
+      console.log('[useRemoveWorkspaceMemberMutation] Member removed successfully:', response);
+      queryClient.invalidateQueries({
+        queryKey: WORKSPACE_MEMBERS_QUERY_KEY(variables.workspaceId),
+      });
+    },
+    onError: (error) => {
+      console.error('[useRemoveWorkspaceMemberMutation] Failed to remove member:', error);
+    },
+  });
+}

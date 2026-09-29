@@ -7,15 +7,6 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  withSequence,
-  withRepeat,
-  Easing,
-} from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { Text } from './UI';
 import { Colors, Fonts } from '../../constant';
@@ -40,72 +31,10 @@ export interface ActivityModalProps {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /**
- * Reanimated icon component with physics-based spring pop-in,
- * continuous pulsing wave (success), horizontal shake wobble (error),
- * floating vertical wave (info), and spring bounce (confirmation).
+ * Static icon component without animations.
  */
-function AnimatedModalIcon({ type }: { type: ActivityModalType }) {
+function ModalIcon({ type }: { type: ActivityModalType }) {
   const { colors } = useTheme();
-
-  const scale = useSharedValue(0);
-  const shake = useSharedValue(0);
-  const pulse = useSharedValue(1);
-  const floatY = useSharedValue(0);
-
-  useEffect(() => {
-    // Reset values on type change / render
-    scale.value = 0;
-    shake.value = 0;
-    pulse.value = 1;
-    floatY.value = 0;
-
-    if (type === 'success') {
-      // Spring pop-in + continuous pulsing ring
-      scale.value = withSpring(1, { damping: 10, stiffness: 120 });
-      pulse.value = withRepeat(
-        withSequence(
-          withTiming(1.08, { duration: 900, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1.0, { duration: 900, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1,
-        true
-      );
-    } else if (type === 'error') {
-      // Pop-in + horizontal shake sequence
-      scale.value = withSpring(1, { damping: 12, stiffness: 140 });
-      shake.value = withSequence(
-        withTiming(-10, { duration: 50 }),
-        withTiming(10, { duration: 50 }),
-        withTiming(-8, { duration: 50 }),
-        withTiming(8, { duration: 50 }),
-        withTiming(-4, { duration: 50 }),
-        withTiming(4, { duration: 50 }),
-        withTiming(0, { duration: 50 })
-      );
-    } else if (type === 'info') {
-      // Scale-in + gentle floating vertical wave
-      scale.value = withSpring(1, { damping: 12, stiffness: 100 });
-      floatY.value = withRepeat(
-        withSequence(
-          withTiming(-6, { duration: 1100, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.sin) })
-        ),
-        -1,
-        true
-      );
-    } else {
-      // Confirmation - spring bounce
-      scale.value = withSpring(1, { damping: 10, stiffness: 110 });
-    }
-  }, [type, scale, shake, pulse, floatY]);
-
-  const animatedIconStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value * pulse.value },
-      { translateX: shake.value },
-      { translateY: floatY.value },
-    ],
-  }));
 
   const getIconConfig = () => {
     switch (type) {
@@ -144,28 +73,27 @@ function AnimatedModalIcon({ type }: { type: ActivityModalType }) {
   const config = getIconConfig();
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.iconContainer,
         {
           backgroundColor: config.bgColor,
           borderColor: config.borderColor,
         },
-        animatedIconStyle,
       ]}
     >
       <Feather name={config.iconName} size={36} color={config.iconColor} />
-    </Animated.View>
+    </View>
   );
 }
 
 /**
- * Reusable ActivityModal component powered by react-native-reanimated.
+ * Reusable ActivityModal component.
  * Modes:
  * 1. Confirmation: User toggles / picks between "Yes" and "No" after a question is asked
- * 2. Success: Completion status with animated pulsing checkmark
- * 3. Error: Alert modal with animated horizontal shake
- * 4. Info: Notice modal with animated floating info icon
+ * 2. Success: Completion status with checkmark
+ * 3. Error: Alert modal with error icon
+ * 4. Info: Notice modal with info icon
  */
 export function ActivityModal({
   visible,
@@ -209,7 +137,7 @@ export function ActivityModal({
     <Modal
       transparent
       visible={visible}
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
@@ -240,8 +168,8 @@ export function ActivityModal({
                 <Feather name="x" size={18} color={colors.textMuted} />
               </TouchableOpacity>
 
-              {/* Reanimated Animated Icon */}
-              <AnimatedModalIcon type={type} />
+              {/* Static Icon */}
+              <ModalIcon type={type} />
 
               {/* Title & Description */}
               <Text
