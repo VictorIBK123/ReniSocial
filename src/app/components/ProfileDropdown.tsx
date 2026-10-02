@@ -21,7 +21,7 @@ import { Text } from './UI';
 import { useAuth } from '../../store/authStore';
 import { useTheme } from '../../hooks/useTheme';
 
-interface ProfileDropdownProps {
+export interface ProfileDropdownProps {
   visible: boolean;
   onClose: () => void;
 }
@@ -67,9 +67,9 @@ export default function ProfileDropdown({ visible, onClose }: ProfileDropdownPro
     router.push({ pathname: '/(tabs)/settings', params: { tab: 'Profile & Security' } });
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     onClose();
-    logout();
+    await logout();
     router.replace('/(auth)/sign-in');
   };
 
@@ -90,11 +90,17 @@ export default function ProfileDropdown({ visible, onClose }: ProfileDropdownPro
           style={[
             styles.backdrop,
             backdropAnimatedStyle,
-            { paddingTop: Math.max(insets.top, 16) + 68 },
+            { paddingTop: Math.max(insets.top, 16) + 54 },
           ]}
         >
           <TouchableWithoutFeedback>
-            <Animated.View style={[styles.menuCard, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }, animatedCardStyle]}>
+            <Animated.View
+              style={[
+                styles.menuCard,
+                { backgroundColor: colors.bgCard, borderColor: colors.borderLight },
+                animatedCardStyle,
+              ]}
+            >
               {/* 1. User Profile Pill */}
               <TouchableOpacity
                 style={[styles.userPill, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}

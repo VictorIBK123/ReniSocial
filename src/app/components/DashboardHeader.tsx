@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Colors } from '../../constant';
+import { useRouter } from 'expo-router';
+import { Colors, Fonts } from '../../constant';
 import { Text } from './UI';
 import { useAuth } from '../../store/authStore';
 import { useWorkspace } from '../../hooks/useWorkspace';
 import ProfileDropdown from './ProfileDropdown';
+import WorkspaceDropdown from './WorkspaceDropdown';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function DashboardHeader() {
+  const router = useRouter();
   const { user } = useAuth();
   const { currentWorkspace } = useWorkspace();
   const { colors, isDark, setThemePreference } = useTheme();
+  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [anchor, setAnchor] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const workspaceSelectorRef = React.useRef<View>(null);
 
-  const workspaceName = currentWorkspace?.name || 'Workspace';
+  const brandNavy = isDark ? colors.textDark : '#001E88';
+
+  const formatType = (type?: string) => {
+    if (!type) return 'Personal';
+    return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+  };
+
+  const workspaceName = currentWorkspace?.name || 'Acme Corp Global';
   const workspaceInitials = currentWorkspace?.name
     ? currentWorkspace.name
         .split(' ')
@@ -23,24 +36,59 @@ export default function DashboardHeader() {
         .join('')
         .substring(0, 2)
         .toUpperCase()
-    : 'WS';
+    : 'AA';
+
+  const handleOpenWorkspaceMenu = () => {
+    if (workspaceSelectorRef.current) {
+      workspaceSelectorRef.current.measureInWindow((x, y, width, height) => {
+        setAnchor({ x, y, width, height });
+        setIsWorkspaceMenuOpen(true);
+      });
+    } else {
+      setIsWorkspaceMenuOpen(true);
+    }
+  };
 
   return (
     <View style={styles.header}>
       <View style={styles.headerLeft}>
-        <View style={[styles.logoIcon, { backgroundColor: colors.brandPrimary }]}>
+        <TouchableOpacity
+          style={[styles.logoIcon, { backgroundColor: colors.brandPrimary }]}
+          activeOpacity={0.7}
+          onPress={() => router.push('/connect-socials' as any)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
           <Feather name="send" size={16} color={Colors.white} />
-        </View>
-        <TouchableOpacity style={[styles.workspaceSelector, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}>
+        </TouchableOpacity>
+        <TouchableOpacity
+          ref={workspaceSelectorRef as any}
+          style={[styles.workspaceSelector, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}
+          activeOpacity={0.75}
+          onPress={handleOpenWorkspaceMenu}
+          onLayout={() => {
+            workspaceSelectorRef.current?.measureInWindow((x, y, width, height) => {
+              if (x > 0 || y > 0) {
+                setAnchor({ x, y, width, height });
+              }
+            });
+          }}
+        >
           {currentWorkspace?.logo_url ? (
             <Image source={{ uri: currentWorkspace.logo_url }} style={styles.workspaceAvatar} />
           ) : (
-            <View style={[styles.workspaceAvatar, { backgroundColor: colors.brandPrimary }]}>
-              <Text variant="caption" color="white" style={{ fontSize: 10 }}>{workspaceInitials}</Text>
+            <View style={[styles.workspaceAvatar, { backgroundColor: brandNavy }]}>
+              <Text style={styles.initialsText}>{workspaceInitials}</Text>
             </View>
           )}
-          <Text variant="bodyBold" style={[styles.workspaceName, { color: colors.textDark }]} numberOfLines={1} ellipsizeMode="tail">{workspaceName}</Text>
-          <Feather name="chevron-down" size={16} color={colors.textDark} />
+          <View style={styles.workspaceHeaderInfo}>
+            <Text style={[styles.workspaceName, { color: brandNavy }]} numberOfLines={1} ellipsizeMode="tail">
+              {workspaceName}
+            </Text>
+            <Text style={[styles.workspaceType, { color: colors.textMuted }]} numberOfLines={1}>
+              {formatType(currentWorkspace?.type)}
+            </Text>
+          </View>
+          <Feather name="chevron-down" size={15} color={brandNavy} />
         </TouchableOpacity>
       </View>
       <View style={styles.headerRight}>
@@ -73,7 +121,14 @@ export default function DashboardHeader() {
         </TouchableOpacity>
       </View>
 
-      {/* Switcher Pill / Profile Dropdown Menu */}
+      {/* Workspace Switcher Dropdown (when clicking workspace info) */}
+      <WorkspaceDropdown
+        visible={isWorkspaceMenuOpen}
+        onClose={() => setIsWorkspaceMenuOpen(false)}
+        anchor={anchor}
+      />
+
+      {/* User Profile Dropdown (when clicking user profile avatar) */}
       <ProfileDropdown
         visible={isProfileMenuOpen}
         onClose={() => setIsProfileMenuOpen(false)}
@@ -107,26 +162,38 @@ const styles = StyleSheet.create({
   workspaceSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: Colors.borderLight,
-    gap: 6,
-    flexShrink: 1,
+    gap: 8,
+    maxWidth: 205,
   },
   workspaceAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.brandPrimary,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  initialsText: {
+    fontSize: 11.5,
+    fontFamily: Fonts.body.bold,
+    color: '#FFFFFF',
+  },
+  workspaceHeaderInfo: {
+    justifyContent: 'center',
+    maxWidth: 115,
+  },
   workspaceName: {
-    fontSize: 12,
-    flexShrink: 1,
+    fontSize: 12.5,
+    fontFamily: Fonts.body.bold,
+    lineHeight: 15,
+  },
+  workspaceType: {
+    fontSize: 10.5,
+    fontFamily: Fonts.body.regular,
+    lineHeight: 13,
   },
   headerRight: {
     flexDirection: 'row',

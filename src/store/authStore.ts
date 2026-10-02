@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signOut } from '../services/auth.service';
+import { queryClient } from './QueryProvider';
+import { useActiveWorkspaceStore } from './workspaceStore';
+import { useComposerStore } from './composerStore';
 
 export interface UserApiData {
   id?: number;
@@ -123,13 +127,13 @@ export interface AuthState {
   isAuthenticated: boolean;
   isHydrated: boolean;
   setUser: (user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   setHydrated: (isHydrated: boolean) => void;
 }
 
 export const useAuth = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       isHydrated: false,
@@ -137,9 +141,57 @@ export const useAuth = create<AuthState>()(
         console.log('[AuthStore] Storing user details:', JSON.stringify(user, null, 2));
         set({ user, isAuthenticated: true });
       },
-      logout: () => {
-        console.log('[AuthStore] User logged out, cleared from store');
+      logout: async () => {
+        const currentToken = get().user?.token;
+        console.log('[AuthStore] Initiating logout and wiping all app memory...');
+
+        // 1. Call backend signout service (if session token exists)
+        if (currentToken) {
+          try {
+            await signOut(currentToken);
+            console.log('[AuthStore] Backend signout succeeded');
+          } catch (error) {
+            console.warn('[AuthStore] Backend signOut failed or offline, proceeding with local wipe:', error);
+          }
+        }
+
+        // 2. Clear Auth Store state
         set({ user: null, isAuthenticated: false });
+
+        // 3. Clear Active Workspace Store
+        try {
+          useActiveWorkspaceStore.getState().setActiveWorkspaceId(null);
+        } catch (err) {
+          console.warn('[AuthStore] Error clearing active workspace store:', err);
+        }
+
+        // 4. Close any open composer drafts
+        try {
+          useComposerStore.getState().closeComposer();
+        } catch (err) {
+          console.warn('[AuthStore] Error closing composer:', err);
+        }
+
+        // 5. Cancel ongoing React Query fetches and wipe cache in memory
+        try {
+          queryClient.cancelQueries();
+          queryClient.clear();
+        } catch (err) {
+          console.warn('[AuthStore] Error clearing query client cache:', err);
+        }
+
+        // 6. Wipe all persisted user and data caches from AsyncStorage
+        try {
+          await Promise.allSettled([
+            AsyncStorage.removeItem('auth-storage'),
+            AsyncStorage.removeItem('active-workspace-storage'),
+            AsyncStorage.removeItem('reni-query-cache'),
+          ]);
+        } catch (err) {
+          console.warn('[AuthStore] Error removing AsyncStorage keys:', err);
+        }
+
+        console.log('[AuthStore] All app memory, caches, and persisted storage wiped successfully.');
       },
       setHydrated: (isHydrated: boolean) => set({ isHydrated }),
     }),

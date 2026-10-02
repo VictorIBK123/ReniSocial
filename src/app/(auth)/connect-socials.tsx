@@ -1,4 +1,4 @@
-import { FontAwesome5 } from '@expo/vector-icons';
+import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -16,6 +16,7 @@ import {
   Text,
   View,
 } from '../components/UI';
+import { useAuth } from '../../store/authStore';
 
 interface SocialPlatform {
   id: string;
@@ -74,10 +75,8 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
 export default function ConnectSocialsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [connectedMap, setConnectedMap] = useState<Record<string, boolean>>({
-    linkedin: true,
-    x: true,
-  });
+  const { user } = useAuth();
+  const [connectedMap, setConnectedMap] = useState<Record<string, boolean>>({});
 
   const toggleConnect = (id: string) => {
     setConnectedMap((prev) => ({
@@ -87,7 +86,11 @@ export default function ConnectSocialsScreen() {
   };
 
   const handleFinish = () => {
-    router.replace('/(tabs)/dashboard');
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/dashboard');
+    }
   };
 
   return (
@@ -99,6 +102,17 @@ export default function ConnectSocialsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.container}>
+        {router.canGoBack() && (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
+          >
+            <Feather name="arrow-left" size={22} color={Colors.textDark} />
+          </TouchableOpacity>
+        )}
+
         {/* Header Title Section */}
         <View style={styles.titleSection}>
           <Text variant="heading" color="dark" style={styles.heading}>
@@ -136,7 +150,7 @@ export default function ConnectSocialsScreen() {
                       {platform.name}
                     </Text>
                     <Text variant="caption" color={isConnected ? 'primary' : 'muted'} style={styles.handleText}>
-                      {isConnected ? '@reniteam' : platform.defaultHandle}
+                      {isConnected ? (user?.username ? `@${user.username}` : 'Connected') : platform.defaultHandle}
                     </Text>
                   </View>
 
@@ -221,6 +235,15 @@ const styles = StyleSheet.create({
   },
   titleSection: {
     marginBottom: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   heading: {
     fontSize: 26,

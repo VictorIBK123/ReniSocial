@@ -37,7 +37,8 @@
         {
           "photosPermission": "Allow ReniSocial to access your photos to select workspace logos."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,

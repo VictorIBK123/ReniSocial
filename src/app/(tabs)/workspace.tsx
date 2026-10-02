@@ -740,12 +740,55 @@ export default function WorkspaceScreen() {
                                 scrollEnabled={false}
                                 ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
                                 renderItem={({ item: member }) => {
-                                    const memberName =
+                                    const currentUserId = currentUser?.id != null ? String(currentUser.id).trim() : null;
+                                    const currentUserEmail = (currentUser?.email || (currentUser as any)?.mail || '').trim().toLowerCase();
+                                    const currentUsername = (currentUser?.username || '').trim().toLowerCase();
+
+                                    const rawMemberUserId = member.user_id != null ? member.user_id : (member.user?.id != null ? member.user.id : member.id);
+                                    const memberUserId = rawMemberUserId != null ? String(rawMemberUserId).trim() : null;
+                                    const memberEmail = (member.email || member.user?.email || (member as any)?.mail || (member.user as any)?.mail || '').trim().toLowerCase();
+                                    const memberUsername = (member.user?.username || member.username || '').trim().toLowerCase();
+
+                                    const isOwnerMatch = Boolean(
+                                        currentWorkspace?.owner_id != null &&
+                                        currentUserId &&
+                                        String(currentWorkspace.owner_id).trim() === currentUserId &&
+                                        (member.role?.toLowerCase() === 'owner' || (memberUserId && memberUserId === currentUserId))
+                                    );
+
+                                    const isIdMatch = Boolean(
+                                        currentUserId && (
+                                            (memberUserId && currentUserId === memberUserId) ||
+                                            (member.user_id != null && currentUserId === String(member.user_id).trim()) ||
+                                            (member.user?.id != null && currentUserId === String(member.user.id).trim()) ||
+                                            (member.id != null && currentUserId === String(member.id).trim())
+                                        )
+                                    );
+
+                                    const isEmailMatch = Boolean(
+                                        currentUserEmail && memberEmail && currentUserEmail === memberEmail
+                                    );
+
+                                    const isUsernameMatch = Boolean(
+                                        currentUsername && memberUsername && currentUsername === memberUsername
+                                    );
+
+                                    const isYou = Boolean(isIdMatch || isEmailMatch || isUsernameMatch || isOwnerMatch);
+
+                                    let memberName =
                                         member.name ||
                                         (member.user?.first_name || member.user?.last_name
                                             ? `${member.user?.first_name || ''} ${member.user?.last_name || ''}`.trim()
-                                            : member.user?.name || member.email || 'Team Member');
-                                    const memberEmail = member.email || member.user?.email || '';
+                                            : member.user?.name || member.email || (member as any)?.mail || '');
+
+                                    if ((!memberName || memberName === 'Team Member') && isYou && currentUser) {
+                                        memberName = currentUser.fullName || currentUser.firstName || currentUser.username || 'You';
+                                    } else if (!memberName) {
+                                        memberName = 'Team Member';
+                                    }
+
+                                    const displayMemberEmail = member.email || member.user?.email || (member as any)?.mail || (member.user as any)?.mail || '';
+
                                     const initials =
                                         memberName
                                             .split(' ')
@@ -755,14 +798,6 @@ export default function WorkspaceScreen() {
                                             .join('')
                                             .toUpperCase() || 'TM';
                                     const avatar = member.avatar || member.user?.avatar_url || member.avatar_url;
-                                    const isYou = Boolean(
-                                        (currentUser?.id &&
-                                            (member.user_id === currentUser.id ||
-                                                member.id === currentUser.id ||
-                                                member.user?.id === currentUser.id)) ||
-                                        (currentUser?.email &&
-                                            (member.email === currentUser.email || member.user?.email === currentUser.email))
-                                    );
 
                                     return (
                                         <Card style={styles.memberCard}>
@@ -778,7 +813,13 @@ export default function WorkspaceScreen() {
 
                                                 <View style={styles.memberInfo}>
                                                     <View style={styles.memberNameRow}>
-                                                        <Text variant="bodyBold" color="dark" style={styles.memberName}>
+                                                        <Text
+                                                            variant="bodyBold"
+                                                            color="dark"
+                                                            style={styles.memberName}
+                                                            numberOfLines={1}
+                                                            ellipsizeMode="tail"
+                                                        >
                                                             {memberName}
                                                         </Text>
                                                         {isYou && (
@@ -787,9 +828,15 @@ export default function WorkspaceScreen() {
                                                             </View>
                                                         )}
                                                     </View>
-                                                    {memberEmail ? (
-                                                        <Text variant="caption" color="muted" style={styles.memberEmail}>
-                                                            {memberEmail}
+                                                    {displayMemberEmail ? (
+                                                        <Text
+                                                            variant="caption"
+                                                            color="muted"
+                                                            style={styles.memberEmail}
+                                                            numberOfLines={1}
+                                                            ellipsizeMode="tail"
+                                                        >
+                                                            {displayMemberEmail}
                                                         </Text>
                                                     ) : null}
                                                 </View>
@@ -840,8 +887,8 @@ export default function WorkspaceScreen() {
                                     renderItem={({ item: invite }) => (
                                         <Card>
                                             <View style={styles.inviteCardContent}>
-                                                <View>
-                                                    <Text variant="bodyBold" color="dark" style={styles.inviteEmail}>
+                                                <View style={{ flex: 1, marginRight: 12 }}>
+                                                    <Text variant="bodyBold" color="dark" style={styles.inviteEmail} numberOfLines={1} ellipsizeMode="tail">
                                                         {invite.email}
                                                     </Text>
                                                     <Text variant="caption" color="muted" style={styles.inviteSubtext}>
@@ -851,6 +898,7 @@ export default function WorkspaceScreen() {
                                                 <TouchableOpacity
                                                     activeOpacity={0.7}
                                                     onPress={() => handleRevokeInvite(invite.id)}
+                                                    style={{ flexShrink: 0 }}
                                                 >
                                                     <Text variant="bodyBold" style={styles.revokeText}>
                                                         Revoke
@@ -1258,12 +1306,14 @@ const styles = StyleSheet.create({
     memberTopRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
     },
     avatarImage: {
         width: 42,
         height: 42,
         borderRadius: 12,
         backgroundColor: '#E2E8F0',
+        flexShrink: 0,
     },
     avatarInitials: {
         width: 42,
@@ -1272,6 +1322,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#EEF2F6',
         justifyContent: 'center',
         alignItems: 'center',
+        flexShrink: 0,
     },
     avatarInitialsText: {
         fontSize: 15,
@@ -1281,6 +1332,9 @@ const styles = StyleSheet.create({
     memberInfo: {
         flex: 1,
         marginLeft: 12,
+        marginRight: 8,
+        minWidth: 0,
+        justifyContent: 'center',
     },
     memberNameRow: {
         flexDirection: 'row',
@@ -1289,6 +1343,7 @@ const styles = StyleSheet.create({
     },
     memberName: {
         fontSize: 15,
+        flexShrink: 1,
     },
     youBadge: {
         backgroundColor: '#F1F5F9',
@@ -1297,6 +1352,7 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         paddingHorizontal: 6,
         paddingVertical: 1,
+        flexShrink: 0,
     },
     youBadgeText: {
         fontSize: 11,
@@ -1338,7 +1394,10 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.body.semiBold,
     },
     moreButton: {
-        padding: 4,
+        padding: 6,
+        flexShrink: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     pendingHeaderLeft: {
         flexDirection: 'row',

@@ -122,17 +122,39 @@ export const login = async (email: string, password?: string): Promise<SignInRes
 };
 
 /**
- * Sign out the current user
+ * Sign out the current user on the backend
+ * @param token Optional session token override
  */
-export const signOut = async (): Promise<SignOutResponse> => {
+export const signOut = async (token?: string): Promise<SignOutResponse> => {
+  const headers = {
+    'X-Session-Id': token || '',
+    'Authorization': 'Bearer renisocial',
+    'Content-Type': 'application/json',
+  };
+
   try {
-    console.log('[AuthService] signOut called');
-    const response = await axios.request<SignOutResponse>({
-      method: 'POST',
-      url: `${API_BASE_URL}/in/auth/signout`,
-    });
-    console.log('[AuthService] signOut response:', response.data);
-    return response.data;
+    console.log('[AuthService] signOut called with X-Session-Id:', token ? `${token.substring(0, 8)}...` : 'none');
+    try {
+      const response = await axios.request<SignOutResponse>({
+        method: 'POST',
+        url: `${API_BASE_URL}/api/in/auth/signout`,
+        headers,
+      });
+      console.log('[AuthService] signOut response (/api/in/auth/signout):', response.data);
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        console.log('[AuthService] /api/in/auth/signout 404, falling back to /in/auth/signout');
+        const fallbackRes = await axios.request<SignOutResponse>({
+          method: 'POST',
+          url: `${API_BASE_URL}/in/auth/signout`,
+          headers,
+        });
+        console.log('[AuthService] signOut fallback response (/in/auth/signout):', fallbackRes.data);
+        return fallbackRes.data;
+      }
+      throw err;
+    }
   } catch (error: any) {
     console.error('[AuthService] signOut error:', error?.response?.data || error.message);
     throw error;

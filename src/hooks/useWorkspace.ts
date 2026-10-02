@@ -26,24 +26,8 @@ export const WORKSPACES_QUERY_KEY = ['workspaces'] as const;
 export const WORKSPACE_MEMBERS_QUERY_KEY = (workspaceId?: string) =>
   ['workspaces', workspaceId || '', 'members'] as const;
 
-// Lightweight store to retain user's chosen active workspace ID across sessions
-interface ActiveWorkspaceState {
-  activeWorkspaceId: string | null;
-  setActiveWorkspaceId: (id: string | null) => void;
-}
-
-export const useActiveWorkspaceStore = create<ActiveWorkspaceState>()(
-  persist(
-    (set) => ({
-      activeWorkspaceId: null,
-      setActiveWorkspaceId: (activeWorkspaceId) => set({ activeWorkspaceId }),
-    }),
-    {
-      name: 'active-workspace-storage',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
-);
+import { useActiveWorkspaceStore, type ActiveWorkspaceState } from '../store/workspaceStore';
+export { useActiveWorkspaceStore, type ActiveWorkspaceState };
 
 /**
  * TanStack Query hook to fetch the list of workspaces from /api/in/workspaces
