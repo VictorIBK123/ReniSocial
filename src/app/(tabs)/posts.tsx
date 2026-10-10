@@ -1,11 +1,24 @@
 import { Feather } from '@expo/vector-icons';
-import { useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    Image,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constant';
 import { useTheme } from '../../hooks/useTheme';
+import { useWorkspace } from '../../hooks/useWorkspace';
+import { usePostsQuery, usePublishPostMutation } from '../../hooks/usePost';
+import { useComposerStore } from '../../store/composerStore';
 import DashboardHeader from '../components/DashboardHeader';
 import Icon from '../components/IconResolver';
+import ActivityModal, { ActivityModalType } from '../components/ActivityModal';
 import PostFilterModal, { PostChannel, PostStatus } from '../components/posts/PostFilterModal';
 import { Badge, Card, Text, View } from '../components/UI';
 
@@ -23,46 +36,12 @@ interface PostItem {
     isFailed?: boolean;
 }
 
-const POSTS: PostItem[] = [
-    {
-        id: '1',
-        image: 'https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=800',
-        platforms: ['LinkedIn', 'X'],
-        status: 'Scheduled',
-        badgeVariant: 'info',
-        text: "We're thrilled to announce our Q3 performance results! Thanks to the...",
-        dateText: 'Oct 24, 10:00 AM',
-    },
-    {
-        id: '2',
-        platforms: ['Instagram'],
-        status: 'Draft',
-        badgeVariant: 'warning',
-        text: "[Draft] Five tips for improving your remote team's productivity without increasing...",
-        editedText: 'Last edited: 2 hrs ago',
-    },
-    {
-        id: '3',
-        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800',
-        platforms: ['Instagram', 'LinkedIn', 'X'],
-        status: 'Failed',
-        badgeVariant: 'danger',
-        text: 'Behind the scenes: How our design team rebuilt the design system from...',
-        dateText: 'Oct 22, 02:30 PM',
-        isFailed: true,
-    },
-    {
-        id: '4',
-        image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800',
-        platforms: ['LinkedIn'],
-        status: 'Published',
-        badgeVariant: 'success',
-        text: 'New case study is live! See how we helped Acme Corp reduce their operational...',
-        dateText: 'Oct 20, 09:00 AM',
-    },
-];
-
 export default function PostsScreen() {
+    const { colors } = useTheme();
+    const { currentWorkspace } = useWorkspace();
+    const { data: serverPosts = [], isLoading, isFetching, refetch } = usePostsQuery(currentWorkspace?.id);
+    const { openComposer } = useComposerStore();
+
     const [activeTab, setActiveTab] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -80,8 +59,109 @@ export default function PostsScreen() {
         'Draft',
         'Published',
     ]);
+    const publishPostMutation = usePublishPostMutation();
+    const [activityModal, setActivityModal] = useState<{
+        visible: boolean;
+        type: ActivityModalType;
+        title: string;
+        message?: string;
+    }>({
+        visible: false,
+        type: 'info',
+        title: '',
+    });
 
-    const { colors } = useTheme();
+    const handleRetryPublish = async (postId: string) => {
+        try {
+            await publishPostMutation.mutateAsync({
+                postId,
+                workspaceId: currentWorkspace?.id,
+            });
+            setActivityModal({
+                visible: true,
+                type: 'success',
+                title: 'Post Published!',
+                message: 'Your post was successfully published.',
+            });
+            refetch();
+        } catch (error: any) {
+            setActivityModal({
+                visible: true,
+                type: 'error',
+                title: 'Publish Failed',
+                message: error?.response?.data?.message || error?.message || 'Failed to publish post.',
+            });
+        }
+    };
+
+    const handleDraftClick = () => {
+        setActivityModal({
+            visible: true,
+            type: 'info',
+            title: 'Coming Soon',
+            message: 'Drafting posts is coming soon in an upcoming update.',
+        });
+    };
+
+    const allPosts: PostItem[] = useMemo(() => {
+        if (!serverPosts || serverPosts.length === 0) {
+            return [];
+        }
+
+        return serverPosts.map((p) => {
+            const rawStatus = (p.status || 'draft').toLowerCase();
+            let status: 'Scheduled' | 'Draft' | 'Failed' | 'Published' = 'Draft';
+            let badgeVariant: 'info' | 'warning' | 'danger' | 'success' = 'warning';
+
+            if (rawStatus === 'scheduled') {
+                status = 'Scheduled';
+                badgeVariant = 'info';
+            } else if (rawStatus === 'published') {
+                status = 'Published';
+                badgeVariant = 'success';
+            } else if (rawStatus === 'failed') {
+                status = 'Failed';
+                badgeVariant = 'danger';
+            }
+
+            let dateText: string | undefined;
+            const targetDate = p.scheduled_at || p.published_at || p.created_at;
+            if (targetDate) {
+                try {
+                    const d = new Date(targetDate);
+                    dateText = d.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    });
+                } catch {
+                    dateText = targetDate;
+                }
+            }
+
+            const platformNames = (p.platforms || []).map((plat) => {
+                if (plat.toLowerCase() === 'x') return 'X';
+                if (plat.toLowerCase() === 'linkedin') return 'LinkedIn';
+                if (plat.toLowerCase() === 'instagram') return 'Instagram';
+                if (plat.toLowerCase() === 'facebook') return 'Facebook';
+                if (plat.toLowerCase() === 'tiktok') return 'TikTok';
+                if (plat.toLowerCase() === 'pinterest') return 'Pinterest';
+                return plat.charAt(0).toUpperCase() + plat.slice(1);
+            });
+
+            return {
+                id: p.id,
+                image: p.media_urls?.[0],
+                platforms: platformNames.length > 0 ? platformNames : ['LinkedIn'],
+                status,
+                badgeVariant,
+                text: p.content || '',
+                dateText,
+                isFailed: rawStatus === 'failed',
+            };
+        });
+    }, [serverPosts]);
 
     const toggleChannel = (channel: PostChannel) => {
         setSelectedChannels((prev) =>
@@ -95,7 +175,7 @@ export default function PostsScreen() {
         );
     };
 
-    const filteredPosts = POSTS.filter((p) => {
+    const filteredPosts = allPosts.filter((p) => {
         const matchesTab = activeTab === 'All' || p.status === activeTab;
         const matchesSearch = p.text.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = selectedStatuses.includes(p.status as PostStatus);
@@ -111,7 +191,18 @@ export default function PostsScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.bgApp }]}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isFetching}
+                        onRefresh={refetch}
+                        tintColor={colors.brandPrimary}
+                        colors={[colors.brandPrimary]}
+                    />
+                }
+            >
                 <DashboardHeader />
 
                 {/* Title Section */}
@@ -219,12 +310,50 @@ export default function PostsScreen() {
                         keyExtractor={(item) => item.id}
                         scrollEnabled={false}
                         ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
+                        ListEmptyComponent={
+                            isLoading ? (
+                                <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
+                                    <ActivityIndicator size="large" color={colors.brandPrimary} />
+                                    <Text variant="body" color="muted" style={{ marginTop: 12 }}>Loading posts...</Text>
+                                </View>
+                            ) : (
+                                <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+                                    <Feather name="file-text" size={44} color={colors.textMuted} style={{ marginBottom: 12, opacity: 0.6 }} />
+                                    <Text variant="heading" style={{ fontSize: 18, marginBottom: 6, textAlign: 'center' }}>No posts found</Text>
+                                    <Text variant="body" color="muted" style={{ textAlign: 'center', marginBottom: 20 }}>
+                                        {searchQuery || activeTab !== 'All'
+                                            ? 'No posts match your current search or filter criteria.'
+                                            : 'Get started by creating your first post for this workspace!'}
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={{
+                                            backgroundColor: colors.brandDark,
+                                            paddingHorizontal: 20,
+                                            paddingVertical: 12,
+                                            borderRadius: 12,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            gap: 8,
+                                        }}
+                                        onPress={() => openComposer()}
+                                    >
+                                        <Feather name="plus" size={16} color={Colors.white} />
+                                        <Text style={{ color: Colors.white, fontWeight: '700', fontSize: 14 }}>Create Post</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )
+                        }
                         renderItem={({ item, index }) => {
                             if (viewMode === 'list') {
-                                // For mockup purposes, let's say the first item is checked
-                                const isChecked = index === 0;
+                                const isChecked = false;
                                 return (
-                                    <View style={[styles.listCardRow, { backgroundColor: colors.white, borderColor: colors.borderLight }]}>
+                                    <TouchableOpacity
+                                        activeOpacity={item.status === 'Draft' ? 0.7 : 1}
+                                        onPress={() => {
+                                            if (item.status === 'Draft') handleDraftClick();
+                                        }}
+                                        style={[styles.listCardRow, { backgroundColor: colors.white, borderColor: colors.borderLight }]}
+                                    >
                                         <View style={styles.colCheckbox}>
                                             <View style={[
                                                 styles.checkboxBase,
@@ -270,7 +399,7 @@ export default function PostsScreen() {
                                                 {item.dateText ? item.dateText.replace(', ', ',\n') : item.editedText?.replace(': ', ':\n')}
                                             </Text>
                                         </View>
-                                    </View>
+                                    </TouchableOpacity>
                                 );
                             }
 
@@ -282,7 +411,13 @@ export default function PostsScreen() {
                                             style={styles.cardImage}
                                         />
                                     )}
-                                    <View style={styles.cardContent}>
+                                    <TouchableOpacity
+                                        activeOpacity={item.status === 'Draft' ? 0.7 : 1}
+                                        onPress={() => {
+                                            if (item.status === 'Draft') handleDraftClick();
+                                        }}
+                                        style={styles.cardContent}
+                                    >
                                         <View style={styles.cardBadgesRow}>
                                             <View style={styles.platformBadges}>
                                                 {item.platforms.map((p) => (
@@ -294,11 +429,45 @@ export default function PostsScreen() {
                                                     <>
                                                         <Feather name="alert-triangle" size={16} color="#DC2626" />
                                                         <View style={{ width: 16 }} />
-                                                        <Icon name="refresh-red" size={16} />
+                                                        <TouchableOpacity
+                                                            onPress={() => handleRetryPublish(item.id)}
+                                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                            disabled={publishPostMutation.isPending}
+                                                        >
+                                                            <Icon name="refresh-red" size={16} />
+                                                        </TouchableOpacity>
                                                     </>
                                                 )}
-                                                <Icon name="edit" size={16} />
-                                                <Icon name="delete" size={16} />
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        if (item.status === 'Draft') {
+                                                            handleDraftClick();
+                                                        } else {
+                                                            setActivityModal({
+                                                                visible: true,
+                                                                type: 'info',
+                                                                title: 'Coming Soon',
+                                                                message: 'Editing existing posts is coming soon in an upcoming update.',
+                                                            });
+                                                        }
+                                                    }}
+                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                >
+                                                    <Icon name="edit" size={16} />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        setActivityModal({
+                                                            visible: true,
+                                                            type: 'info',
+                                                            title: 'Coming Soon',
+                                                            message: 'Deleting posts is coming soon in an upcoming update.',
+                                                        });
+                                                    }}
+                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                >
+                                                    <Icon name="delete" size={16} />
+                                                </TouchableOpacity>
                                             </View>
                                         </View>
                                         <Text
@@ -323,7 +492,7 @@ export default function PostsScreen() {
                                                 <Text variant="caption" color="muted">{item.editedText}</Text>
                                             )}
                                         </View>
-                                    </View>
+                                    </TouchableOpacity>
                                 </Card>
                             );
                         }}
@@ -341,6 +510,16 @@ export default function PostsScreen() {
                 onToggleChannel={toggleChannel}
                 selectedStatuses={selectedStatuses}
                 onToggleStatus={toggleStatus}
+            />
+
+            <ActivityModal
+                visible={activityModal.visible}
+                type={activityModal.type}
+                title={activityModal.title}
+                message={activityModal.message}
+                confirmText="OK"
+                onConfirm={() => setActivityModal((prev) => ({ ...prev, visible: false }))}
+                onClose={() => setActivityModal((prev) => ({ ...prev, visible: false }))}
             />
         </SafeAreaView>
     );

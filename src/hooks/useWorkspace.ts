@@ -19,12 +19,23 @@ import {
   UploadWorkspaceLogoResponse,
   Workspace,
   WorkspaceMember,
+  SupportedPlatform,
+  PlatformConnection,
+  ConnectPlatformResponse,
+  DisconnectPlatformResponse,
+  getSupportedPlatforms,
+  getWorkspaceConnections,
+  initiatePlatformConnect,
+  disconnectPlatform,
 } from '../services/workspace.service';
 import { useAuth } from '../store/authStore';
 
 export const WORKSPACES_QUERY_KEY = ['workspaces'] as const;
 export const WORKSPACE_MEMBERS_QUERY_KEY = (workspaceId?: string) =>
   ['workspaces', workspaceId || '', 'members'] as const;
+export const SUPPORTED_PLATFORMS_QUERY_KEY = ['supported-platforms'] as const;
+export const WORKSPACE_CONNECTIONS_QUERY_KEY = (workspaceId?: string) =>
+  ['workspaces', workspaceId || '', 'connections'] as const;
 
 import { useActiveWorkspaceStore, type ActiveWorkspaceState } from '../store/workspaceStore';
 export { useActiveWorkspaceStore, type ActiveWorkspaceState };
@@ -193,6 +204,105 @@ export function useRemoveWorkspaceMemberMutation() {
     },
     onError: (error) => {
       console.error('[useRemoveWorkspaceMemberMutation] Failed to remove member:', error);
+    },
+  });
+}
+
+/**
+ * TanStack Query hook to fetch supported social platforms from /api/in/platforms
+ */
+export function useSupportedPlatformsQuery() {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery<SupportedPlatform[]>({
+    queryKey: SUPPORTED_PLATFORMS_QUERY_KEY,
+    queryFn: async () => {
+      console.log('[useSupportedPlatformsQuery] Fetching supported platforms');
+      const response: any = await getSupportedPlatforms();
+      let list: any[] = [];
+      if (Array.isArray(response)) {
+        list = response;
+      } else if (Array.isArray(response?.data)) {
+        list = response.data;
+      } else if (response?.status && Array.isArray(response?.data)) {
+        list = response.data;
+      }
+      return list.map((item) => {
+        if (typeof item === 'string') {
+          return { id: item, name: item.charAt(0).toUpperCase() + item.slice(1) };
+        }
+        return item;
+      });
+    },
+    enabled: isAuthenticated,
+  });
+}
+
+/**
+ * TanStack Query hook to fetch connected platforms for a workspace from /api/in/workspaces/in/:id/connections
+ */
+export function useWorkspaceConnectionsQuery(workspaceId?: string) {
+  const { isAuthenticated } = useAuth();
+
+  return useQuery<PlatformConnection[]>({
+    queryKey: WORKSPACE_CONNECTIONS_QUERY_KEY(workspaceId),
+    queryFn: async () => {
+      if (!workspaceId) return [];
+      console.log('[useWorkspaceConnectionsQuery] Fetching connections for workspace:', workspaceId);
+      const response: any = await getWorkspaceConnections(workspaceId);
+      let list: any[] = [];
+      if (Array.isArray(response)) {
+        list = response;
+      } else if (Array.isArray(response?.data)) {
+        list = response.data;
+      } else if (response?.status && Array.isArray(response?.data)) {
+        list = response.data;
+      }
+      return list;
+    },
+    enabled: isAuthenticated && Boolean(workspaceId),
+  });
+}
+
+/**
+ * TanStack Query mutation hook to initiate social platform connection at /api/in/workspaces/in/:id/connect/in/:platform
+ * Returns { redirect_url: string }
+ */
+export function useInitiatePlatformConnectMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ConnectPlatformResponse,
+    Error,
+    { workspaceId: string; platform: string }
+  >({
+    mutationFn: ({ workspaceId, platform }) => initiatePlatformConnect(workspaceId, platform),
+    onSuccess: (response, variables) => {
+      console.log('[useInitiatePlatformConnectMutation] Connect initiated successfully:', response);
+      queryClient.invalidateQueries({
+        queryKey: WORKSPACE_CONNECTIONS_QUERY_KEY(variables.workspaceId),
+      });
+    },
+  });
+}
+
+/**
+ * TanStack Query mutation hook to disconnect a platform connection at /api/in/workspaces/in/:id/connections/:connectionId
+ */
+export function useDisconnectPlatformMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    DisconnectPlatformResponse,
+    Error,
+    { workspaceId: string; connectionId: string }
+  >({
+    mutationFn: ({ workspaceId, connectionId }) => disconnectPlatform(workspaceId, connectionId),
+    onSuccess: (response, variables) => {
+      console.log('[useDisconnectPlatformMutation] Disconnected successfully:', response);
+      queryClient.invalidateQueries({
+        queryKey: WORKSPACE_CONNECTIONS_QUERY_KEY(variables.workspaceId),
+      });
     },
   });
 }

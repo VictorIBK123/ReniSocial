@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -23,10 +24,23 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
+import * as ImagePicker from 'expo-image-picker';
 import { Colors, Fonts } from '../../constant';
 import { Text } from './UI';
 import { Icon } from './IconResolver';
+import { useRouter } from 'expo-router';
 import { useComposerStore } from '../../store/composerStore';
+import {
+  useWorkspace,
+  useSupportedPlatformsQuery,
+  useWorkspaceConnectionsQuery,
+} from '../../hooks/useWorkspace';
+import {
+  useCreatePostMutation,
+  usePublishPostMutation,
+  useUploadPostMediaMutation,
+} from '../../hooks/usePost';
+import ActivityModal, { ActivityModalType } from './ActivityModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -34,7 +48,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 // Types & Constants
 // ============================================================================
 
-interface ChannelConfig {
+export interface ChannelConfig {
   id: string;
   name: string;
   iconType: 'grid' | 'svg' | 'fa5';
@@ -44,15 +58,70 @@ interface ChannelConfig {
   outlineColor?: string;
 }
 
-const CHANNELS: ChannelConfig[] = [
-  { id: 'all', name: 'All', iconType: 'grid', color: Colors.white, bg: Colors.brandPrimary },
-  { id: 'x', name: 'X / Twitter', iconType: 'svg', iconName: 'x-icon', color: '#000000', outlineColor: '#000000' },
-  { id: 'linkedin', name: 'LinkedIn', iconType: 'fa5', iconName: 'linkedin-in', color: '#0A66C2', outlineColor: '#0A66C2' },
-  { id: 'instagram', name: 'Instagram', iconType: 'svg', iconName: 'instagram', color: '#E1306C', outlineColor: '#E1306C' },
-  { id: 'tiktok', name: 'TikTok', iconType: 'fa5', iconName: 'tiktok', color: '#000000', outlineColor: '#000000' },
-  { id: 'facebook', name: 'Facebook', iconType: 'fa5', iconName: 'facebook-f', color: '#1877F2', outlineColor: '#1877F2' },
-  { id: 'pinterest', name: 'Pinterest', iconType: 'svg', iconName: 'pinterest-2', color: '#E60023', outlineColor: '#E60023' },
+export const DEFAULT_PLATFORMS: { id: string; name: string }[] = [
+  { id: 'linkedin', name: 'LinkedIn' },
+  { id: 'x', name: 'X / Twitter' },
+  { id: 'meta', name: 'Meta' },
 ];
+
+export const PLATFORM_CONFIG_MAP: Record<string, Partial<ChannelConfig>> = {
+  x: {
+    name: 'X / Twitter',
+    iconType: 'svg',
+    iconName: 'x-icon',
+    color: '#000000',
+    outlineColor: '#000000',
+  },
+  twitter: {
+    name: 'X / Twitter',
+    iconType: 'svg',
+    iconName: 'x-icon',
+    color: '#000000',
+    outlineColor: '#000000',
+  },
+  linkedin: {
+    name: 'LinkedIn',
+    iconType: 'fa5',
+    iconName: 'linkedin-in',
+    color: '#0A66C2',
+    outlineColor: '#0A66C2',
+  },
+  meta: {
+    name: 'Meta',
+    iconType: 'svg',
+    iconName: 'instagram',
+    color: '#E1306C',
+    outlineColor: '#E1306C',
+  },
+  instagram: {
+    name: 'Instagram',
+    iconType: 'svg',
+    iconName: 'instagram',
+    color: '#E1306C',
+    outlineColor: '#E1306C',
+  },
+  facebook: {
+    name: 'Facebook',
+    iconType: 'fa5',
+    iconName: 'facebook-f',
+    color: '#1877F2',
+    outlineColor: '#1877F2',
+  },
+  tiktok: {
+    name: 'TikTok',
+    iconType: 'fa5',
+    iconName: 'tiktok',
+    color: '#000000',
+    outlineColor: '#000000',
+  },
+  pinterest: {
+    name: 'Pinterest',
+    iconType: 'svg',
+    iconName: 'pinterest-2',
+    color: '#E60023',
+    outlineColor: '#E60023',
+  },
+};
 
 const QUICK_TIMES = ['Today 5 PM', 'Tomorrow 9 AM', 'Next Monday 9 AM'];
 
@@ -61,20 +130,56 @@ const QUICK_TIMES = ['Today 5 PM', 'Tomorrow 9 AM', 'Next Monday 9 AM'];
 // ============================================================================
 
 interface ChannelSelectorProps {
+  channels: ChannelConfig[];
   selectedChannels: string[];
   onToggleChannel: (id: string) => void;
+  isLoading?: boolean;
+  onConnectPress?: () => void;
 }
 
-function ChannelSelector({ selectedChannels, onToggleChannel }: ChannelSelectorProps) {
+function ChannelSelector({
+  channels,
+  selectedChannels,
+  onToggleChannel,
+  isLoading = false,
+  onConnectPress,
+}: ChannelSelectorProps) {
+  if (!isLoading && channels.length === 0) {
+    return (
+      <View style={styles.section}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <Text style={[styles.sectionLabel, { marginBottom: 0 }]}>CHANNELS</Text>
+        </View>
+        <View style={styles.emptyChannelsBox}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={styles.emptyChannelsTitle}>No Channels Connected</Text>
+            <Text style={styles.emptyChannelsSubtitle}>
+              Connect social accounts to this workspace to post.
+            </Text>
+          </View>
+          {onConnectPress && (
+            <TouchableOpacity onPress={onConnectPress} style={styles.connectChannelBtn} activeOpacity={0.8}>
+              <Feather name="plus" size={14} color={Colors.white} />
+              <Text style={styles.connectChannelBtnText}>Connect</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionLabel}>CHANNELS</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <Text style={[styles.sectionLabel, { marginBottom: 0 }]}>CHANNELS</Text>
+        {isLoading && <ActivityIndicator size="small" color={Colors.brandPrimary} />}
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.channelsRow}
       >
-        {CHANNELS.map((ch) => {
+        {channels.map((ch) => {
           const isActive =
             selectedChannels.includes(ch.id) ||
             (ch.id === 'all' && selectedChannels.includes('all'));
@@ -147,6 +252,20 @@ function ChannelSelector({ selectedChannels, onToggleChannel }: ChannelSelectorP
             </TouchableOpacity>
           );
         })}
+        {onConnectPress && (
+          <TouchableOpacity
+            onPress={onConnectPress}
+            activeOpacity={0.8}
+            style={[
+              styles.channelPill,
+              styles.channelPillInactive,
+              { borderStyle: 'dashed', borderColor: '#CBD5E1' },
+            ]}
+          >
+            <Feather name="plus" size={13} color="#64748B" />
+            <Text style={[styles.channelText, { color: '#64748B' }]}>Add</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -208,6 +327,7 @@ interface PostEditorProps {
   selectedMedia: string[];
   onAddMedia: () => void;
   onRemoveMedia: (index: number) => void;
+  isUploadingMedia?: boolean;
 }
 
 function PostEditor({
@@ -216,6 +336,7 @@ function PostEditor({
   selectedMedia,
   onAddMedia,
   onRemoveMedia,
+  isUploadingMedia = false,
 }: PostEditorProps) {
   const charCount = postText.length;
   const maxChar = 280;
@@ -271,7 +392,11 @@ function PostEditor({
         />
 
         <View style={styles.inputToolbar}>
-          <TouchableOpacity style={styles.toolIconBtn}>
+          <TouchableOpacity
+            style={styles.toolIconBtn}
+            onPress={onAddMedia}
+            disabled={isUploadingMedia}
+          >
             <Icon name="gallery" size={18} color="#454652" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.toolIconBtn}>
@@ -304,9 +429,19 @@ function PostEditor({
             </View>
           )}
           ListFooterComponent={
-            <TouchableOpacity style={styles.mediaAddBox} onPress={onAddMedia}>
-              <Feather name="image" size={22} color="#64748B" />
-              <Text style={styles.mediaAddText}>ADD</Text>
+            <TouchableOpacity
+              style={styles.mediaAddBox}
+              onPress={onAddMedia}
+              disabled={isUploadingMedia}
+            >
+              {isUploadingMedia ? (
+                <ActivityIndicator size="small" color={Colors.brandPrimary} />
+              ) : (
+                <>
+                  <Feather name="image" size={22} color="#64748B" />
+                  <Text style={styles.mediaAddText}>ADD</Text>
+                </>
+              )}
             </TouchableOpacity>
           }
         />
@@ -651,15 +786,41 @@ export function PinterestPreviewCard({ postText, mediaUri }: PlatformPreviewCard
 }
 
 interface PlatformPreviewListProps {
-  selectedChannels: string[];
+  targetPlatforms: string[];
   postText: string;
   mediaUri: string;
 }
 
-function PlatformPreviewList({ selectedChannels, postText, mediaUri }: PlatformPreviewListProps) {
+function PlatformPreviewList({ targetPlatforms, postText, mediaUri }: PlatformPreviewListProps) {
   const isVisible = (channelId: string) => {
-    return selectedChannels.includes('all') || selectedChannels.includes(channelId);
+    if (targetPlatforms.includes(channelId)) return true;
+    if ((channelId === 'instagram' || channelId === 'facebook') && targetPlatforms.includes('meta')) {
+      return true;
+    }
+    return false;
   };
+
+  const hasAnyVisible =
+    isVisible('x') ||
+    isVisible('linkedin') ||
+    isVisible('instagram') ||
+    isVisible('tiktok') ||
+    isVisible('facebook') ||
+    isVisible('pinterest');
+
+  if (!hasAnyVisible) {
+    return (
+      <View style={styles.previewContainer}>
+        <View style={styles.emptyPreviewBox}>
+          <Feather name="eye-off" size={24} color="#94A3B8" />
+          <Text style={styles.emptyPreviewTitle}>No Previews Available</Text>
+          <Text style={styles.emptyPreviewSubtitle}>
+            Connect and select a social channel to preview your post.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.previewContainer}>
@@ -743,44 +904,63 @@ interface BottomActionButtonsProps {
   onDraft: () => void;
   onSchedule: () => void;
   onPublishNow: () => void;
+  isSubmitting?: boolean;
+  submittingType?: 'publish' | 'schedule' | null;
 }
 
 function BottomActionButtons({
   onDraft,
   onSchedule,
   onPublishNow,
+  isSubmitting = false,
+  submittingType = null,
 }: BottomActionButtonsProps) {
   return (
     <View style={styles.bottomActionsContainer}>
       {/* Top Row: Draft + Schedule Post */}
       <View style={styles.buttonRow}>
         <TouchableOpacity
-          style={styles.draftButton}
+          style={[styles.draftButton, isSubmitting && { opacity: 0.6 }]}
           activeOpacity={0.8}
           onPress={onDraft}
+          disabled={isSubmitting}
         >
           <Icon name="draft" size={18} />
           <Text style={styles.draftButtonText}>Draft</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.scheduleButton}
+          style={[styles.scheduleButton, isSubmitting && { opacity: 0.6 }]}
           activeOpacity={0.8}
           onPress={onSchedule}
+          disabled={isSubmitting}
         >
-          <Icon name="send" size={18} />
-          <Text style={styles.scheduleButtonText}>Schedule Post</Text>
+          {isSubmitting && submittingType === 'schedule' ? (
+            <ActivityIndicator size="small" color={Colors.white} />
+          ) : (
+            <Icon name="send" size={18} />
+          )}
+          <Text style={styles.scheduleButtonText}>
+            {isSubmitting && submittingType === 'schedule' ? 'Scheduling...' : 'Schedule Post'}
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* Bottom Row: Publish Now */}
       <TouchableOpacity
-        style={styles.publishNowButton}
+        style={[styles.publishNowButton, isSubmitting && { opacity: 0.6 }]}
         activeOpacity={0.8}
         onPress={onPublishNow}
+        disabled={isSubmitting}
       >
-        <Feather name="play" size={20} color={Colors.white} />
-        <Text style={styles.publishNowButtonText}>Publish Now</Text>
+        {isSubmitting && submittingType === 'publish' ? (
+          <ActivityIndicator size="small" color={Colors.white} />
+        ) : (
+          <Feather name="play" size={20} color={Colors.white} />
+        )}
+        <Text style={styles.publishNowButtonText}>
+          {isSubmitting && submittingType === 'publish' ? 'Publishing...' : 'Publish Now'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -791,21 +971,120 @@ function BottomActionButtons({
 // ============================================================================
 
 export default function NewPostComposer() {
+  const router = useRouter();
   const { isOpen, activeTab, closeComposer, setActiveTab } = useComposerStore();
+  const { currentWorkspace } = useWorkspace();
+  const { data: serverPlatforms = [], isLoading: isLoadingPlatforms } = useSupportedPlatformsQuery();
+  const { data: connections = [], isLoading: isLoadingConnections } = useWorkspaceConnectionsQuery(
+    currentWorkspace?.id
+  );
+  const isLoadingChannels = isLoadingPlatforms || isLoadingConnections;
+
+  const createPostMutation = useCreatePostMutation();
+  const publishPostMutation = usePublishPostMutation();
+  const uploadMediaMutation = useUploadPostMediaMutation();
+
+  const channels: ChannelConfig[] = useMemo(() => {
+    // If no connections in this workspace, return empty so unconnected channels are not shown
+    if (connections.length === 0) {
+      return [];
+    }
+
+    const uniqueConnectedPlatforms = new Map<
+      string,
+      { id: string; name?: string; accountName?: string }
+    >();
+
+    for (const conn of connections) {
+      const rawPlatform = (conn.platform || conn.platform_id || conn.provider || '')
+        .toString()
+        .trim()
+        .toLowerCase();
+      if (!rawPlatform) continue;
+
+      const matchingServerPlat = serverPlatforms.find(
+        (sp) =>
+          sp.id.toLowerCase() === rawPlatform ||
+          (rawPlatform === 'twitter' && sp.id.toLowerCase() === 'x') ||
+          ((rawPlatform === 'instagram' || rawPlatform === 'facebook') && sp.id.toLowerCase() === 'meta')
+      );
+
+      const canonicalId =
+        matchingServerPlat?.id ||
+        (rawPlatform === 'twitter' ? 'x' : rawPlatform);
+
+      if (!uniqueConnectedPlatforms.has(canonicalId)) {
+        uniqueConnectedPlatforms.set(canonicalId, {
+          id: canonicalId,
+          name: matchingServerPlat?.name,
+          accountName: conn.account_name,
+        });
+      }
+    }
+
+    const dynamicChannels = Array.from(uniqueConnectedPlatforms.values()).map((item) => {
+      const key = item.id.toLowerCase();
+      const meta = PLATFORM_CONFIG_MAP[key] || {};
+      return {
+        id: item.id,
+        name: item.name || meta.name || item.id.toUpperCase(),
+        iconType: meta.iconType || 'fa5',
+        iconName: meta.iconName || 'globe',
+        color: meta.color || '#001E88',
+        outlineColor: meta.outlineColor || '#001E88',
+      } as ChannelConfig;
+    });
+
+    if (dynamicChannels.length === 0) {
+      return [];
+    }
+
+    const allPill: ChannelConfig = {
+      id: 'all',
+      name: 'All',
+      iconType: 'grid',
+      color: Colors.white,
+      bg: Colors.brandPrimary,
+    };
+
+    return [allPill, ...dynamicChannels];
+  }, [connections, serverPlatforms]);
+
   const [isRendered, setIsRendered] = useState(false);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingType, setSubmittingType] = useState<'publish' | 'schedule' | null>(null);
 
   // Form State
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [postText, setPostText] = useState('');
-  const [selectedMedia, setSelectedMedia] = useState<string[]>([
-    'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=500',
-  ]);
-  const [scheduleTime, setScheduleTime] = useState('Tomorrow, 9:00 AM');
+  const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
+  const [scheduleTime, setScheduleTime] = useState('Tomorrow 9 AM');
   const [scheduleNote, setScheduleNote] = useState('Optimal time for social engagement');
+
+  const [activityModal, setActivityModal] = useState<{
+    visible: boolean;
+    type: ActivityModalType;
+    title: string;
+    message?: string;
+    confirmText?: string;
+    onCloseAction?: () => void;
+  }>({
+    visible: false,
+    type: 'info',
+    title: '',
+  });
 
   // Animation values
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const opacity = useSharedValue(0);
+
+  const resetForm = () => {
+    setPostText('');
+    setSelectedMedia([]);
+    setSelectedChannels(['all']);
+    setScheduleTime('Tomorrow 9 AM');
+  };
 
   const handleClose = useCallback(() => {
     'worklet';
@@ -870,11 +1149,298 @@ export default function NewPostComposer() {
     setSelectedMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const addMedia = () => {
-    setSelectedMedia((prev) => [
-      ...prev,
-      'https://images.unsplash.com/photo-1552664730-d307ca884978?w=500',
-    ]);
+  const handleAddMedia = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        setActivityModal({
+          visible: true,
+          type: 'error',
+          title: 'Permission Required',
+          message: 'Photo library permission is required to choose images for your post.',
+        });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      setIsUploadingMedia(true);
+
+      const uploadRes = await uploadMediaMutation.mutateAsync({
+        uri: asset.uri,
+        name: asset.fileName || `post_media_${Date.now()}.jpg`,
+        type: asset.mimeType || 'image/jpeg',
+      });
+
+      if (uploadRes.status && uploadRes.data?.file_url) {
+        setSelectedMedia((prev) => [...prev, uploadRes.data.file_url]);
+      } else {
+        setSelectedMedia((prev) => [...prev, asset.uri]);
+      }
+    } catch (error: any) {
+      console.error('[NewPostComposer] Media upload error:', error);
+      setActivityModal({
+        visible: true,
+        type: 'error',
+        title: 'Upload Failed',
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          'Failed to upload image. Please check your connection and try again.',
+      });
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const handleConnectPress = () => {
+    handleClose();
+    router.push('/connect-socials' as any);
+  };
+
+  const resolveTargetPlatforms = (): string[] => {
+    const validConnectedPlatformIds = channels
+      .filter((c) => c.id !== 'all')
+      .map((c) => c.id);
+
+    if (validConnectedPlatformIds.length === 0) {
+      return [];
+    }
+
+    if (selectedChannels.includes('all')) {
+      return validConnectedPlatformIds;
+    }
+    return selectedChannels.filter((c) => c !== 'all' && validConnectedPlatformIds.includes(c));
+  };
+
+  const getScheduledIsoString = (timeStr: string): string => {
+    const now = new Date();
+    if (timeStr.includes('Today')) {
+      const d = new Date(now);
+      d.setHours(17, 0, 0, 0);
+      return d.toISOString();
+    }
+    if (timeStr.includes('Tomorrow')) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + 1);
+      d.setHours(9, 0, 0, 0);
+      return d.toISOString();
+    }
+    if (timeStr.includes('Monday')) {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = (8 - day) % 7 || 7;
+      d.setDate(d.getDate() + diff);
+      d.setHours(9, 0, 0, 0);
+      return d.toISOString();
+    }
+    const d = new Date(now);
+    d.setDate(d.getDate() + 1);
+    d.setHours(9, 0, 0, 0);
+    return d.toISOString();
+  };
+
+  const handlePublishNow = async () => {
+    if (!postText.trim()) {
+      setActivityModal({
+        visible: true,
+        type: 'error',
+        title: 'Content Required',
+        message: 'Please write some text for your post before publishing.',
+      });
+      return;
+    }
+
+    if (!currentWorkspace?.id) {
+      setActivityModal({
+        visible: true,
+        type: 'error',
+        title: 'No Workspace Found',
+        message: 'Please select or create an active workspace before publishing.',
+      });
+      return;
+    }
+
+    const platforms = resolveTargetPlatforms();
+    if (platforms.length === 0) {
+      setActivityModal({
+        visible: true,
+        type: 'error',
+        title: connections.length === 0 ? 'No Connected Channels' : 'Channel Required',
+        message:
+          connections.length === 0
+            ? 'No social channels are connected to this workspace. Please connect a channel first.'
+            : 'Please select at least one connected channel.',
+        confirmText: connections.length === 0 ? 'Connect Socials' : 'OK',
+        onCloseAction: connections.length === 0 ? handleConnectPress : undefined,
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmittingType('publish');
+
+    try {
+      // 1. Create post first
+      const createRes = await createPostMutation.mutateAsync({
+        workspace_id: currentWorkspace.id,
+        content: postText.trim(),
+        platforms,
+        media_urls: selectedMedia.filter((m) => m.startsWith('http')),
+      });
+
+      const postData =
+        (createRes as any)?.post ||
+        (createRes as any)?.data?.post ||
+        (createRes as any)?.data ||
+        createRes;
+      const postId = postData?.id || (createRes as any)?.id;
+
+      if (!postId) {
+        throw new Error(
+          (createRes as any)?.message || 'Post was created but no ID was returned from server.'
+        );
+      }
+
+      // 2. Publish post using publishing endpoint
+      await publishPostMutation.mutateAsync({
+        postId,
+        workspaceId: currentWorkspace.id,
+      });
+
+      setActivityModal({
+        visible: true,
+        type: 'success',
+        title: 'Post Published!',
+        message: 'Your post was successfully created and published.',
+        onCloseAction: () => {
+          resetForm();
+          handleClose();
+        },
+      });
+    } catch (error: any) {
+      console.error('[NewPostComposer] Publish error:', error);
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to publish post. Please check your network and try again.';
+      setActivityModal({
+        visible: true,
+        type: 'error',
+        title: 'Publishing Failed',
+        message: errMsg,
+      });
+    } finally {
+      setIsSubmitting(false);
+      setSubmittingType(null);
+    }
+  };
+
+  const handleSchedulePost = async () => {
+    if (!postText.trim()) {
+      setActivityModal({
+        visible: true,
+        type: 'error',
+        title: 'Content Required',
+        message: 'Please write some text for your post before scheduling.',
+      });
+      return;
+    }
+
+    if (!currentWorkspace?.id) {
+      setActivityModal({
+        visible: true,
+        type: 'error',
+        title: 'No Workspace Found',
+        message: 'Please select or create an active workspace before scheduling.',
+      });
+      return;
+    }
+
+    const platforms = resolveTargetPlatforms();
+    if (platforms.length === 0) {
+      setActivityModal({
+        visible: true,
+        type: 'error',
+        title: connections.length === 0 ? 'No Connected Channels' : 'Channel Required',
+        message:
+          connections.length === 0
+            ? 'No social channels are connected to this workspace. Please connect a channel first.'
+            : 'Please select at least one connected channel.',
+        confirmText: connections.length === 0 ? 'Connect Socials' : 'OK',
+        onCloseAction: connections.length === 0 ? handleConnectPress : undefined,
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmittingType('schedule');
+
+    try {
+      const scheduledIso = getScheduledIsoString(scheduleTime);
+      const createRes = await createPostMutation.mutateAsync({
+        workspace_id: currentWorkspace.id,
+        content: postText.trim(),
+        platforms,
+        media_urls: selectedMedia.filter((m) => m.startsWith('http')),
+        scheduled_at: scheduledIso,
+      });
+
+      const postData =
+        (createRes as any)?.post ||
+        (createRes as any)?.data?.post ||
+        (createRes as any)?.data ||
+        createRes;
+      const postId = postData?.id || (createRes as any)?.id;
+
+      if (!postId && (createRes as any)?.message) {
+        throw new Error((createRes as any).message);
+      }
+
+      setActivityModal({
+        visible: true,
+        type: 'success',
+        title: 'Post Scheduled!',
+        message: `Your post has been scheduled for ${scheduleTime}.`,
+        onCloseAction: () => {
+          resetForm();
+          handleClose();
+        },
+      });
+    } catch (error: any) {
+      console.error('[NewPostComposer] Schedule error:', error);
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to schedule post. Please check your network and try again.';
+      setActivityModal({
+        visible: true,
+        type: 'error',
+        title: 'Scheduling Failed',
+        message: errMsg,
+      });
+    } finally {
+      setIsSubmitting(false);
+      setSubmittingType(null);
+    }
+  };
+
+  const handleDraft = () => {
+    setActivityModal({
+      visible: true,
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Drafting posts is coming soon in an upcoming update.',
+    });
   };
 
   const backdropAnimatedStyle = useAnimatedStyle(() => ({
@@ -922,8 +1488,11 @@ export default function NewPostComposer() {
           >
             {/* 1. Target Channels */}
             <ChannelSelector
+              channels={channels}
               selectedChannels={selectedChannels}
               onToggleChannel={toggleChannel}
+              isLoading={isLoadingChannels}
+              onConnectPress={handleConnectPress}
             />
 
             {/* 2. Composer / Preview Tabs */}
@@ -935,12 +1504,13 @@ export default function NewPostComposer() {
                 postText={postText}
                 onChangeText={setPostText}
                 selectedMedia={selectedMedia}
-                onAddMedia={addMedia}
+                onAddMedia={handleAddMedia}
                 onRemoveMedia={removeMedia}
+                isUploadingMedia={isUploadingMedia}
               />
             ) : (
               <PlatformPreviewList
-                selectedChannels={selectedChannels}
+                targetPlatforms={resolveTargetPlatforms()}
                 postText={postText}
                 mediaUri={selectedMedia[0]}
               />
@@ -952,7 +1522,7 @@ export default function NewPostComposer() {
               scheduleNote={scheduleNote}
               onSelectTime={(time) => {
                 setScheduleTime(time);
-                setScheduleNote('Optimal time for LinkedIn');
+                setScheduleNote('Optimal time for social engagement');
               }}
             />
 
@@ -961,12 +1531,32 @@ export default function NewPostComposer() {
 
           {/* 5. Sticky Bottom Action Buttons */}
           <BottomActionButtons
-            onDraft={handleClose}
-            onSchedule={handleClose}
-            onPublishNow={handleClose}
+            onDraft={handleDraft}
+            onSchedule={handleSchedulePost}
+            onPublishNow={handlePublishNow}
+            isSubmitting={isSubmitting}
+            submittingType={submittingType}
           />
         </KeyboardAvoidingView>
       </Animated.View>
+
+      <ActivityModal
+        visible={activityModal.visible}
+        type={activityModal.type}
+        title={activityModal.title}
+        message={activityModal.message}
+        confirmText={activityModal.confirmText || 'OK'}
+        onConfirm={() => {
+          const action = activityModal.onCloseAction;
+          setActivityModal((prev) => ({ ...prev, visible: false }));
+          if (action) action();
+        }}
+        onClose={() => {
+          const action = activityModal.onCloseAction;
+          setActivityModal((prev) => ({ ...prev, visible: false }));
+          if (action) action();
+        }}
+      />
     </View>
   );
 }
@@ -1809,5 +2399,65 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Fonts.body.bold,
     color: Colors.white,
+  },
+  emptyChannelsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  emptyChannelsTitle: {
+    fontSize: 14,
+    fontFamily: Fonts.body.bold,
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  emptyChannelsSubtitle: {
+    fontSize: 12,
+    fontFamily: Fonts.body.regular,
+    color: '#64748B',
+  },
+  connectChannelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.brandPrimary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  connectChannelBtnText: {
+    fontSize: 12,
+    fontFamily: Fonts.body.semiBold,
+    color: Colors.white,
+  },
+  emptyPreviewBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
+  },
+  emptyPreviewTitle: {
+    fontSize: 15,
+    fontFamily: Fonts.body.bold,
+    color: '#0F172A',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyPreviewSubtitle: {
+    fontSize: 13,
+    fontFamily: Fonts.body.regular,
+    color: '#64748B',
+    textAlign: 'center',
   },
 });

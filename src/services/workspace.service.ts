@@ -73,6 +73,31 @@ export type GetWorkspaceMembersResponse = ApiResponse<WorkspaceMember[]>;
 export type InviteWorkspaceMemberResponse = ApiResponse<any>;
 export type RemoveWorkspaceMemberResponse = ApiResponse<any>;
 
+export interface SupportedPlatform {
+  id: string;
+  name: string;
+}
+
+export interface PlatformConnection {
+  id?: string;
+  workspace_id?: string;
+  platform: string;
+  account_name?: string;
+  account_id?: string;
+  profile_picture?: string;
+  created_at?: string;
+  [key: string]: any;
+}
+
+export interface ConnectPlatformData {
+  redirect_url: string;
+}
+
+export type GetSupportedPlatformsResponse = ApiResponse<SupportedPlatform[]>;
+export type GetWorkspaceConnectionsResponse = ApiResponse<PlatformConnection[]>;
+export type ConnectPlatformResponse = ApiResponse<ConnectPlatformData>;
+export type DisconnectPlatformResponse = ApiResponse<any>;
+
 /**
  * Uploads workspace logo at /api/in/workspaces/logo-upload
  * Form field: file
@@ -296,6 +321,122 @@ export const removeWorkspaceMember = async (
     return response.data;
   } catch (error: any) {
     console.error('[WorkspaceService] removeWorkspaceMember error:', error?.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Fetches list of supported social platforms at GET /api/in/platforms
+ */
+export const getSupportedPlatforms = async (token?: string): Promise<GetSupportedPlatformsResponse> => {
+  const sessionToken = token || useAuth.getState().user?.token;
+
+  try {
+    console.log('[WorkspaceService] getSupportedPlatforms called');
+    const response = await axios.request<GetSupportedPlatformsResponse>({
+      method: 'GET',
+      url: `${API_BASE_URL}/api/in/platforms`,
+      headers: {
+        'X-Session-Id': sessionToken || '',
+        'Authorization': 'Bearer renisocial',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('[WorkspaceService] getSupportedPlatforms response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[WorkspaceService] getSupportedPlatforms error:', error?.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Fetches connected platforms for a workspace at GET /api/in/workspaces/in/:id/connections
+ */
+export const getWorkspaceConnections = async (
+  workspaceId: string,
+  token?: string
+): Promise<GetWorkspaceConnectionsResponse> => {
+  const sessionToken = token || useAuth.getState().user?.token;
+
+  try {
+    console.log('[WorkspaceService] getWorkspaceConnections called for workspace:', workspaceId);
+    const response = await axios.request<GetWorkspaceConnectionsResponse>({
+      method: 'GET',
+      url: `${API_BASE_URL}/api/in/workspaces/in/${workspaceId}/connections`,
+      headers: {
+        'X-Session-Id': sessionToken || '',
+        'Authorization': 'Bearer renisocial',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('[WorkspaceService] getWorkspaceConnections response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[WorkspaceService] getWorkspaceConnections error:', error?.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Initiates social platform OAuth connection at POST /api/in/workspaces/in/:id/connect/in/:platform
+ * Returns { redirect_url: string }
+ */
+export const initiatePlatformConnect = async (
+  workspaceId: string,
+  platform: string,
+  token?: string
+): Promise<ConnectPlatformResponse> => {
+  const sessionToken = token || useAuth.getState().user?.token;
+
+  try {
+    console.log('[WorkspaceService] initiatePlatformConnect called for workspace:', workspaceId, 'platform:', platform);
+    const response = await axios.request<ConnectPlatformResponse>({
+      method: 'POST',
+      url: `${API_BASE_URL}/api/in/workspaces/in/${workspaceId}/connect/in/${platform}`,
+      headers: {
+        'X-Session-Id': sessionToken || '',
+        'Authorization': 'Bearer renisocial',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('[WorkspaceService] initiatePlatformConnect response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[WorkspaceService] initiatePlatformConnect error:', error?.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Disconnects a platform connection at DELETE /api/in/workspaces/in/:id/connections/:connectionId
+ */
+export const disconnectPlatform = async (
+  workspaceId: string,
+  connectionId: string,
+  token?: string
+): Promise<DisconnectPlatformResponse> => {
+  const sessionToken = token || useAuth.getState().user?.token;
+
+  try {
+    console.log('[WorkspaceService] disconnectPlatform called for workspace:', workspaceId, 'connectionId:', connectionId);
+    const response = await axios.request<DisconnectPlatformResponse>({
+      method: 'DELETE',
+      url: `${API_BASE_URL}/api/in/workspaces/in/${workspaceId}/connections/${connectionId}`,
+      headers: {
+        'X-Session-Id': sessionToken || '',
+        'Authorization': 'Bearer renisocial',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('[WorkspaceService] disconnectPlatform response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[WorkspaceService] disconnectPlatform error:', error?.response?.data || error.message);
     throw error;
   }
 };
