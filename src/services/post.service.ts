@@ -233,19 +233,21 @@ export const getPosts = async (
   token?: string
 ): Promise<GetPostsResponse> => {
   const sessionToken = token || useAuth.getState().user?.token;
-  const page = options?.page ?? 1;
+  const page = options?.page ?? 0;
   const limit = options?.limit ?? 20;
+
+  const params: Record<string, any> = {
+    workspace_id: workspaceId,
+    page,
+    limit,
+  };
 
   try {
     console.log('[PostService] getPosts called for workspaceId:', workspaceId, 'page:', page, 'limit:', limit);
     const response = await axios.request<GetPostsResponse>({
       method: 'GET',
       url: `${API_BASE_URL}/api/in/posts`,
-      params: {
-        workspace_id: workspaceId,
-        page,
-        limit,
-      },
+      params,
       headers: {
         'X-Session-Id': sessionToken || '',
         'Authorization': 'Bearer renisocial',

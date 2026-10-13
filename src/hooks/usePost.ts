@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../store/authStore';
 import { useActiveWorkspaceStore } from '../store/workspaceStore';
 import {
@@ -19,12 +19,15 @@ import {
 export const POST_QUERY_KEYS = {
   all: ['posts'] as const,
   lists: () => [...POST_QUERY_KEYS.all, 'list'] as const,
-  list: (workspaceId?: string, page?: number, limit?: number) =>
+  list: (workspaceId?: string, page: number = 0, limit: number = 20) =>
     [...POST_QUERY_KEYS.lists(), { workspaceId, page, limit }] as const,
+  infinite: (workspaceId?: string, limit: number = 20) =>
+    [...POST_QUERY_KEYS.lists(), 'infinite', { workspaceId, limit }] as const,
 };
 
 /**
  * TanStack Query hook to fetch posts for a specific workspace.
+ * Defaults to 0-indexed page 0 with 20 items limit.
  */
 export function usePostsQuery(
   workspaceId?: string | null,
@@ -32,17 +35,53 @@ export function usePostsQuery(
 ) {
   const isAuthenticated = useAuth((state) => state.isAuthenticated);
   const token = useAuth((state) => state.user?.token);
+  const page = options?.page ?? 0;
+  const limit = options?.limit ?? 20;
 
   return useQuery<PostItem[], Error>({
-    queryKey: POST_QUERY_KEYS.list(workspaceId || undefined, options?.page, options?.limit),
+    queryKey: POST_QUERY_KEYS.list(workspaceId || undefined, page, limit),
     queryFn: async () => {
       if (!workspaceId) return [];
-      const res: any = await getPosts(workspaceId, options, token);
+      const res: any = await getPosts(workspaceId, { page, limit }, token);
       if (Array.isArray(res)) return res;
       if (Array.isArray(res?.posts)) return res.posts;
       if (Array.isArray(res?.data?.posts)) return res.data.posts;
       if (Array.isArray(res?.data)) return res.data;
       return [];
+    },
+    enabled: !!workspaceId && isAuthenticated && (options?.enabled ?? true),
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+/**
+ * TanStack Query infinite query hook to fetch posts with 0-indexed pagination.
+ */
+export function useInfinitePostsQuery(
+  workspaceId?: string | null,
+  options?: { limit?: number; enabled?: boolean }
+) {
+  const isAuthenticated = useAuth((state) => state.isAuthenticated);
+  const token = useAuth((state) => state.user?.token);
+  const limit = options?.limit ?? 20;
+
+  return useInfiniteQuery<PostItem[], Error>({
+    queryKey: POST_QUERY_KEYS.infinite(workspaceId || undefined, limit),
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!workspaceId) return [];
+      const res: any = await getPosts(workspaceId, { page: pageParam as number, limit }, token);
+      if (Array.isArray(res)) return res;
+      if (Array.isArray(res?.posts)) return res.posts;
+      if (Array.isArray(res?.data?.posts)) return res.data.posts;
+      if (Array.isArray(res?.data)) return res.data;
+      return [];
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length < limit) {
+        return undefined;
+      }
+      return allPages.length;
     },
     enabled: !!workspaceId && isAuthenticated && (options?.enabled ?? true),
     staleTime: 1000 * 60 * 2, // 2 minutes
